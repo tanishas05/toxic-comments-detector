@@ -1,5 +1,7 @@
 import { useState, useRef } from "react";
 import axios from "axios";
+import * as pdfjsLib from "pdfjs-dist";
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 const TOXIC_PATTERNS = [
   /\b(idiot|stupid|dumb|moron|fool|loser|pathetic)\b/gi,
@@ -116,9 +118,24 @@ export default function App() {
   };
 
 
-  const handleBulkFile = async (file) => {
+  const extractLinesFromFile = async (file) => {
+    if (file.name.endsWith(".pdf")) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = "";
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const tc = await page.getTextContent();
+        fullText += tc.items.map(i => i.str).join(" ") + "\n";
+      }
+      return fullText.split(/[.!?\n]+/).map(l => l.trim()).filter(l => l.length > 4);
+    }
     const text = await file.text();
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    return text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  };
+
+  const handleBulkFile = async (file) => {
+    const lines = await extractLinesFromFile(file);
     if (!lines.length) return;
     setBulkResults([]);
     setBulkLoading(true);
@@ -530,7 +547,7 @@ export default function App() {
           <div style={{ maxWidth:900, margin:"0 auto" }}>
             <h1 style={{ fontSize:32, fontWeight:900, color:"#f0f4ff", margin:"0 0 8px", letterSpacing:"-0.03em" }}>Bulk Upload</h1>
             <p style={{ fontSize:15, color:C.txt2, margin:"0 0 32px" }}>
-              Upload a <code style={{ background:C.card, padding:"2px 7px", borderRadius:5, color:"#818cf8", fontSize:14 }}>.txt</code> or <code style={{ background:C.card, padding:"2px 7px", borderRadius:5, color:"#818cf8", fontSize:14 }}>.csv</code> file — one comment per line. Each comment is analyzed and results are shown below.
+              Upload a <code style={{ background:C.card, padding:"2px 7px", borderRadius:5, color:"#818cf8", fontSize:14 }}>.txt</code>, <code style={{ background:C.card, padding:"2px 7px", borderRadius:5, color:"#818cf8", fontSize:14 }}>.csv</code>, or <code style={{ background:C.card, padding:"2px 7px", borderRadius:5, color:"#f472b6", fontSize:14 }}>.pdf</code> file. TXT/CSV: one comment per line. PDF: sentences are extracted automatically.
             </p>
 
             {/* Drop zone */}
@@ -551,11 +568,12 @@ export default function App() {
                   <line x1="12" y1="3" x2="12" y2="15" stroke="#4f46e5" strokeWidth="1.8" strokeLinecap="round"/>
                 </svg>
                 <p style={{ fontSize:16, fontWeight:600, color:C.txt, margin:"0 0 6px" }}>Drop your file here</p>
-                <p style={{ fontSize:13, color:C.txt2, margin:"0 0 16px" }}>or click to browse</p>
+                <p style={{ fontSize:13, color:C.txt2, margin:"0 0 4px" }}>or click to browse</p>
+                <p style={{ fontSize:12, color:C.txt3, margin:"0 0 16px" }}>Supports .txt  .csv  .pdf</p>
                 <span style={{ display:"inline-block", padding:"8px 20px", borderRadius:8, background:"#4f46e5", color:"#fff", fontSize:13, fontWeight:600 }}>Choose File</span>
               </div>
             </label>
-            <input id="bulk-file" type="file" accept=".txt,.csv" style={{ display:"none" }} onChange={e => { if (e.target.files[0]) handleBulkFile(e.target.files[0]); e.target.value=""; }} />
+            <input id="bulk-file" type="file" accept=".txt,.csv,.pdf" style={{ display:"none" }} onChange={e => { if (e.target.files[0]) handleBulkFile(e.target.files[0]); e.target.value=""; }} />
 
             {/* Progress */}
             {bulkLoading && (
@@ -648,7 +666,7 @@ export default function App() {
                   <line x1="8" y1="17" x2="12" y2="17" stroke={C.txt3} strokeWidth="1.5" strokeLinecap="round"/>
                 </svg>
                 <p style={{ fontSize:15, margin:"0 0 6px", fontWeight:600, color:C.txt2 }}>No file uploaded yet</p>
-                <p style={{ fontSize:13, margin:0 }}>Upload a .txt or .csv file with one comment per line</p>
+                <p style={{ fontSize:13, margin:0 }}>Supports .txt and .csv (one comment per line) or .pdf (sentences extracted automatically)</p>
               </div>
             )}
           </div>
