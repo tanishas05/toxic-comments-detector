@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import axios from "axios";
 
 const TOXIC_PATTERNS = [
@@ -13,100 +13,72 @@ const TOXIC_PATTERNS = [
 
 function getHighlightedParts(text) {
   const indices = [];
-  TOXIC_PATTERNS.forEach((pattern) => {
-    const re = new RegExp(pattern.source, pattern.flags);
-    let m;
-    while ((m = re.exec(text)) !== null) {
-      indices.push({ start: m.index, end: m.index + m[0].length });
-    }
+  TOXIC_PATTERNS.forEach(p => {
+    const re = new RegExp(p.source, p.flags); let m;
+    while ((m = re.exec(text)) !== null) indices.push({ start: m.index, end: m.index + m[0].length });
   });
   indices.sort((a, b) => a.start - b.start);
   const merged = [];
   for (const seg of indices) {
-    if (merged.length && seg.start < merged[merged.length - 1].end) {
+    if (merged.length && seg.start < merged[merged.length - 1].end)
       merged[merged.length - 1].end = Math.max(merged[merged.length - 1].end, seg.end);
-    } else merged.push({ ...seg });
+    else merged.push({ ...seg });
   }
-  const parts = [];
-  let cursor = 0;
+  const parts = []; let cursor = 0;
   for (const seg of merged) {
-    if (cursor < seg.start) parts.push({ text: text.slice(cursor, seg.start), highlight: false });
-    parts.push({ text: text.slice(seg.start, seg.end), highlight: true });
+    if (cursor < seg.start) parts.push({ text: text.slice(cursor, seg.start), toxic: false });
+    parts.push({ text: text.slice(seg.start, seg.end), toxic: true });
     cursor = seg.end;
   }
-  if (cursor < text.length) parts.push({ text: text.slice(cursor), highlight: false });
+  if (cursor < text.length) parts.push({ text: text.slice(cursor), toxic: false });
   return parts;
 }
 
-function getToxicityLevel(confidence, isToxic) {
-  if (!isToxic || confidence < 0.3)
-    return { label: "Safe",           tier: 0, color: "#34d399", dimColor: "#065f46", trackColor: "rgba(52,211,153,0.12)",  border: "rgba(52,211,153,0.18)"  };
-  if (confidence < 0.5)
-    return { label: "Mildly Toxic",   tier: 1, color: "#fbbf24", dimColor: "#78350f", trackColor: "rgba(251,191,36,0.10)",  border: "rgba(251,191,36,0.2)"   };
-  if (confidence < 0.75)
-    return { label: "Toxic",          tier: 2, color: "#fb923c", dimColor: "#7c2d12", trackColor: "rgba(251,146,60,0.10)",  border: "rgba(251,146,60,0.2)"   };
-  return   { label: "Extremely Toxic",tier: 3, color: "#f87171", dimColor: "#7f1d1d", trackColor: "rgba(248,113,113,0.10)", border: "rgba(248,113,113,0.2)"  };
+function getLevel(conf, isToxic) {
+  if (!isToxic || conf < 0.3) return { label: "Safe",            tier: 0, color: "#4ade80", dark: "#166534", glow: "rgba(74,222,128,0.2)"  };
+  if (conf < 0.5)             return { label: "Mildly Toxic",    tier: 1, color: "#facc15", dark: "#713f12", glow: "rgba(250,204,21,0.2)"  };
+  if (conf < 0.75)            return { label: "Toxic",           tier: 2, color: "#fb923c", dark: "#7c2d12", glow: "rgba(251,146,60,0.2)"  };
+  return                             { label: "Extremely Toxic", tier: 3, color: "#f87171", dark: "#7f1d1d", glow: "rgba(248,113,113,0.2)" };
 }
 
-function MeterBar({ score, color }) {
+const VERDICTS = [
+  "No harmful language detected. Safe to publish.",
+  "Minor negativity detected. Probably fine, keep an eye on it.",
+  "Harmful language found. Flag this comment for review.",
+  "Highly toxic. Remove immediately.",
+];
+
+const SAMPLES = [
+  ["Safe",    "Thanks for sharing! Really appreciate your thoughtful response."],
+  ["Mild",    "This is a bit annoying honestly."],
+  ["Toxic",   "You are such an idiot, nobody cares about your stupid opinion."],
+  ["Extreme", "I hate you, worthless garbage, shut up and go die."],
+];
+
+const C = {
+  bg:     "#080d1a",
+  card:   "#0e1525",
+  border: "#1a2540",
+  border2:"#243050",
+  txt:    "#e2eaf8",
+  txt2:   "#7b8dab",
+  txt3:   "#3d4f6e",
+};
+
+function Meter({ score, color, glow }) {
   const pct = Math.round(score * 100);
-  const filled = Math.round((pct / 100) * 20);
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "10px" }}>
-        <span style={{ fontSize: "11px", letterSpacing: "0.1em", textTransform: "uppercase", color: "#3d4a5c", fontWeight: 700 }}>
-          Toxicity Score
-        </span>
-        <span style={{ fontSize: "36px", fontWeight: 800, color, letterSpacing: "-0.04em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-          {pct}<span style={{ fontSize: "18px", opacity: 0.6 }}>%</span>
-        </span>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:8 }}>
+        <span style={{ fontSize:13, color:C.txt2, fontWeight:600, letterSpacing:"0.05em", textTransform:"uppercase" }}>Toxicity Score</span>
+        <span style={{ fontSize:38, fontWeight:900, color, letterSpacing:"-0.04em", lineHeight:1,  }}>{pct}<span style={{ fontSize:18, opacity:0.6 }}>%</span></span>
       </div>
-      <div style={{ display: "flex", gap: "3px" }}>
-        {Array.from({ length: 20 }).map((_, i) => (
-          <div key={i} style={{
-            flex: 1, height: "9px", borderRadius: "2px",
-            background: i < filled ? color : "rgba(255,255,255,0.05)",
-            transition: `background 0.04s ${i * 30}ms ease`,
-          }} />
-        ))}
+      <div style={{ height:8, background:C.border, borderRadius:999, overflow:"hidden", boxShadow:`inset 0 0 0 1px ${C.border2}` }}>
+        <div style={{ height:"100%", width:`${pct}%`, background:color, borderRadius:999, transition:"width 0.6s cubic-bezier(0.16,1,0.3,1)" }} />
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#1e2d3d", marginTop: "5px", letterSpacing: "0.05em" }}>
-        <span>SAFE</span><span>MILD</span><span>TOXIC</span><span>EXTREME</span>
+      <div style={{ display:"flex", justifyContent:"space-between", marginTop:4, fontSize:11, color:C.txt3 }}>
+        <span>Safe</span><span>Extreme</span>
       </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, color }) {
-  return (
-    <div style={{
-      background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
-      borderRadius: "14px", padding: "18px 20px",
-    }}>
-      <div style={{ fontSize: "10px", color: "#2d3a47", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: "10px" }}>{label}</div>
-      <div style={{ fontSize: "26px", fontWeight: 800, color, letterSpacing: "-0.03em", lineHeight: 1 }}>{value}</div>
-    </div>
-  );
-}
-
-function TopWordsBar({ words }) {
-  if (!words.length) return <p style={{ color: "#1e2d3d", fontSize: "14px", margin: 0 }}>No toxic terms logged yet.</p>;
-  const max = words[0][1];
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-      {words.map(([word, count]) => (
-        <div key={word} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <code style={{ fontSize: "12px", color: "#8b9eb0", width: "100px", textAlign: "right", flexShrink: 0 }}>{word}</code>
-          <div style={{ flex: 1, height: "5px", background: "rgba(255,255,255,0.04)", borderRadius: "999px", overflow: "hidden" }}>
-            <div style={{
-              height: "100%", width: `${(count / max) * 100}%`,
-              background: "linear-gradient(90deg, #fb923c, #f87171)",
-              borderRadius: "999px", transition: "width 0.7s cubic-bezier(0.16,1,0.3,1)",
-            }} />
-          </div>
-          <span style={{ fontSize: "11px", color: "#2d3a47", width: "20px" }}>{count}x</span>
-        </div>
-      ))}
     </div>
   );
 }
@@ -115,441 +87,583 @@ export default function App() {
   const [text, setText] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("analyze");
+  const [tab, setTab] = useState("howitworks");
   const [history, setHistory] = useState([]);
-  const [liveMode, setLiveMode] = useState(true);
+  const [live, setLive] = useState(true);
   const [error, setError] = useState(null);
-
+  const [bulkResults, setBulkResults] = useState([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState(0);
   const abortRef = useRef(null);
+  const textareaRef = useRef(null);
 
-  const runAnalysis = async (input, silent = false) => {
+  const analyze = async (input, silent = false) => {
     if (!input.trim()) { setResult(null); return; }
     if (abortRef.current) abortRef.current.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+    const ctrl = new AbortController(); abortRef.current = ctrl;
     if (!silent) { setLoading(true); setError(null); }
     try {
-      const res = await axios.post(
-        "http://127.0.0.1:8000/predict",
-        { text: input },
-        { signal: controller.signal }
-      );
+      const res = await axios.post("http://127.0.0.1:8000/predict", { text: input }, { signal: ctrl.signal });
       setResult(res.data);
-      setHistory((prev) => {
-        const entry = { text: input.slice(0, 120), result: res.data };
-        return [entry, ...prev.filter((h) => h.text !== entry.text)].slice(0, 50);
-      });
+      setHistory(prev => [{ text: input.slice(0, 120), result: res.data }, ...prev.filter(h => h.text !== input.slice(0, 120))].slice(0, 50));
     } catch (err) {
       if (axios.isCancel(err) || err.name === "CanceledError") return;
-      if (!silent) setError("Cannot reach the backend — make sure FastAPI is running on port 8000.");
+      if (!silent) setError("Backend unreachable. Start FastAPI on port 8000.");
     } finally {
       if (!silent) setLoading(false);
+      textareaRef.current?.focus();
     }
   };
 
-  const handleTextChange = (e) => {
-    const val = e.target.value;
-    setText(val);
-    if (!val.trim()) { setResult(null); return; }
-    if (liveMode && val.endsWith(" ")) {
-      runAnalysis(val.trim(), true);
-    }
-  };
 
-  const handleManualAnalyze = () => { runAnalysis(text); };
-
-  const handleKeyDown = (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") handleManualAnalyze();
-  };
-
-  useEffect(() => () => { if (abortRef.current) abortRef.current.abort(); }, []);
-
-  const level = result ? getToxicityLevel(result.confidence, result.toxic) : null;
-  const highlighted = result ? getHighlightedParts(text) : null;
-  const hasFlags = highlighted?.some((p) => p.highlight);
-
-  const totalAnalyzed = history.length;
-  const toxicCount = history.filter((h) => h.result.toxic).length;
-  const toxicPct = totalAnalyzed ? Math.round((toxicCount / totalAnalyzed) * 100) : 0;
-  const avgScore = totalAnalyzed
-    ? Math.round((history.reduce((s, h) => s + h.result.confidence, 0) / totalAnalyzed) * 100)
-    : 0;
-
-  const wordFreq = {};
-  history.filter((h) => h.result.toxic).forEach((h) => {
-    TOXIC_PATTERNS.forEach((p) => {
-      const re = new RegExp(p.source, p.flags);
-      let m;
-      while ((m = re.exec(h.text)) !== null) {
-        const w = m[0].toLowerCase();
-        wordFreq[w] = (wordFreq[w] || 0) + 1;
+  const handleBulkFile = async (file) => {
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (!lines.length) return;
+    setBulkResults([]);
+    setBulkLoading(true);
+    setBulkProgress(0);
+    const results = [];
+    for (let i = 0; i < lines.length; i++) {
+      const comment = lines[i];
+      try {
+        const res = await axios.post("http://127.0.0.1:8000/predict", { text: comment });
+        results.push({ text: comment, result: res.data });
+        setHistory(prev => [{ text: comment.slice(0, 120), result: res.data }, ...prev].slice(0, 50));
+      } catch {
+        results.push({ text: comment, result: null, error: "Failed" });
       }
+      setBulkResults([...results]);
+      setBulkProgress(Math.round(((i + 1) / lines.length) * 100));
+    }
+    setBulkLoading(false);
+  };
+
+  const exportCSV = (results) => {
+    const rows = [["Comment","Level","Score","Toxic"]];
+    results.forEach(r => {
+      const lv = r.result ? getLevel(r.result.confidence, r.result.toxic) : null;
+      rows.push([
+        `"${r.text.replace(/"/g, '""')}"`,
+        lv ? lv.label : "Error",
+        r.result ? Math.round(r.result.confidence * 100) + "%" : "—",
+        r.result ? (r.result.toxic ? "Yes" : "No") : "—",
+      ]);
     });
+    const csv = rows.map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "safeguard_results.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleKeyUp = e => { if (!live) return; if (e.key === " ") { const v = e.target.value.trim(); if (v) analyze(v, true); } };
+  const handleKeyDown = e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); analyze(text); } };
+
+  const level = result ? getLevel(result.confidence, result.toxic) : null;
+  const parts = result && text ? getHighlightedParts(text) : null;
+  const hasToxicWords = parts?.some(p => p.toxic);
+
+  const total = history.length;
+  const toxicCount = history.filter(h => h.result.toxic).length;
+  const avgScore = total ? Math.round(history.reduce((s, h) => s + h.result.confidence, 0) / total * 100) : 0;
+  const wordFreq = {};
+  history.filter(h => h.result.toxic).forEach(h => {
+    TOXIC_PATTERNS.forEach(p => { const re = new RegExp(p.source, p.flags); let m;
+      while ((m = re.exec(h.text)) !== null) { const w = m[0].toLowerCase(); wordFreq[w] = (wordFreq[w] || 0) + 1; } });
   });
   const topWords = Object.entries(wordFreq).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const tierData = [
+    { label:"Safe",            color:"#4ade80" },
+    { label:"Mildly Toxic",    color:"#facc15" },
+    { label:"Toxic",           color:"#fb923c" },
+    { label:"Extremely Toxic", color:"#f87171" },
+  ];
+  const tierCounts = tierData.map((_, t) => history.filter(h => getLevel(h.result.confidence, h.result.toxic).tier === t).length);
 
-  const Tab = ({ id, label }) => (
-    <button onClick={() => setActiveTab(id)} style={{
-      padding: "7px 16px", fontSize: "13px", fontWeight: 600,
-      border: "none", cursor: "pointer", borderRadius: "8px",
-      background: activeTab === id ? "rgba(255,255,255,0.07)" : "transparent",
-      color: activeTab === id ? "#cdd9e5" : "#3d4a5c",
-      transition: "all 0.18s",
-    }}>{label}</button>
-  );
+  const TABS = [["howitworks","How it works"], ["analyze","Analyze"], ["bulk","Bulk Upload"], ["dashboard","Dashboard"]];
 
-  const InputCard = () => (
-    <div style={{
-      background: "rgba(10,14,26,0.95)", border: "1px solid rgba(255,255,255,0.07)",
-      borderRadius: "18px", padding: "22px", backdropFilter: "blur(10px)",
-    }}>
-      { }
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
-        <span style={{ fontSize: "11px", color: "#2d3a47", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>
-          Comment Input
-        </span>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {loading && (
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 0.75s linear infinite", flexShrink: 0 }}>
-              <circle cx="12" cy="12" r="9" stroke="rgba(99,130,175,0.25)" strokeWidth="2.5"/>
-              <path d="M12 3a9 9 0 0 1 9 9" stroke="#6382af" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-          )}
-          <span style={{ fontSize: "11px", color: loading ? "#6382af" : "#1e2d3d" }}>
-            {loading ? "Analyzing" : liveMode ? "Live" : "Manual"}
-          </span>
-          { }
-          <button onClick={() => setLiveMode((v) => !v)} style={{
-            width: "34px", height: "18px", borderRadius: "999px", border: "none", cursor: "pointer",
-            background: liveMode ? "#6382af" : "rgba(255,255,255,0.08)", position: "relative", transition: "background 0.22s",
-          }}>
-            <span style={{
-              position: "absolute", top: "2px", left: liveMode ? "18px" : "2px",
-              width: "14px", height: "14px", borderRadius: "50%", background: "#fff",
-              transition: "left 0.22s",
-            }}/>
-          </button>
-        </div>
-      </div>
-
-      <textarea
-        rows={7}
-        value={text}
-        onChange={handleTextChange}
-        onKeyDown={handleKeyDown}
-        placeholder="Type or paste a comment..."
-        style={{
-          width: "100%", boxSizing: "border-box",
-          background: "rgba(5,8,18,0.9)", border: "1px solid rgba(255,255,255,0.06)",
-          borderRadius: "12px", padding: "14px 16px",
-          fontSize: "14px", color: "#a8b9cc", lineHeight: 1.75,
-          resize: "vertical", outline: "none", fontFamily: "inherit",
-          transition: "border-color 0.18s",
-        }}
-        onFocus={(e) => (e.target.style.borderColor = "rgba(99,130,175,0.35)")}
-        onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.06)")}
-      />
-
-      { }
-      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "10px" }}>
-        {[
-          ["Safe",    "Thanks for sharing this! Really appreciate the effort."],
-          ["Mild",    "This is getting a bit annoying honestly."],
-          ["Toxic",   "You're such an idiot, nobody cares about your stupid opinion."],
-          ["Extreme", "I hate you, worthless garbage, shut up and go die."],
-        ].map(([label, sample]) => (
-          <button key={label} onClick={() => { setText(sample); setResult(null); if (liveMode) { runAnalysis(sample, true); } }} style={{
-            padding: "5px 12px", borderRadius: "7px", fontSize: "12px", fontWeight: 600,
-            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
-            color: "#2d3a47", cursor: "pointer", transition: "all 0.15s",
-          }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(99,130,175,0.1)"; e.currentTarget.style.color = "#7a99bd"; e.currentTarget.style.borderColor = "rgba(99,130,175,0.2)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.color = "#2d3a47"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"; }}
-          >{label}</button>
-        ))}
-      </div>
-
-      {!liveMode && (
-        <button onClick={handleManualAnalyze} disabled={loading || !text.trim()} style={{
-          marginTop: "12px", width: "100%", padding: "12px",
-          borderRadius: "11px", fontSize: "14px", fontWeight: 700,
-          border: "none", cursor: !text.trim() || loading ? "not-allowed" : "pointer",
-          background: !text.trim() || loading ? "rgba(99,130,175,0.12)" : "rgba(99,130,175,0.22)",
-          color: !text.trim() || loading ? "#1e2d3d" : "#a8c0dc",
-          transition: "all 0.18s",
-        }}
-          onMouseEnter={(e) => { if (text.trim() && !loading) e.currentTarget.style.background = "rgba(99,130,175,0.3)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = !text.trim() || loading ? "rgba(99,130,175,0.12)" : "rgba(99,130,175,0.22)"; }}
-          onMouseDown={(e) => { e.currentTarget.style.transform = "scale(0.985)"; }}
-          onMouseUp={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-        >Analyze  <span style={{ opacity: 0.4, fontWeight: 400 }}>Ctrl+Enter</span></button>
-      )}
-
-      {error && (
-        <div style={{
-          marginTop: "10px", padding: "11px 14px", borderRadius: "10px",
-          background: "rgba(248,113,113,0.07)", border: "1px solid rgba(248,113,113,0.15)",
-          color: "#f87171", fontSize: "13px", lineHeight: 1.5,
-        }}>{error}</div>
-      )}
-    </div>
-  );
- 
-  const ResultCard = () => {
-    if (!result || !level) return null;
-    return (
-      <div style={{
-        background: "rgba(10,14,26,0.95)", border: `1px solid ${level.border}`,
-        borderRadius: "18px", padding: "22px", backdropFilter: "blur(10px)",
-        animation: "fadeUp 0.35s ease both",
-      }}>
-        { }
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: "7px",
-          padding: "5px 13px", borderRadius: "999px",
-          background: level.trackColor, border: `1px solid ${level.border}`,
-          marginBottom: "18px",
-        }}>
-          <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: level.color }} />
-          <span style={{ fontSize: "12px", fontWeight: 700, color: level.color, letterSpacing: "0.05em" }}>{level.label}</span>
-        </div>
-
-        <MeterBar score={result.confidence} color={level.color} />
-
-        { }
-        {hasFlags && (
-          <div style={{ marginTop: "18px" }}>
-            <div style={{ fontSize: "10px", color: "#1e2d3d", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: "8px" }}>
-              Flagged Terms
-            </div>
-            <div style={{
-              padding: "13px 15px", borderRadius: "11px",
-              background: "rgba(5,8,18,0.9)", border: "1px solid rgba(255,255,255,0.05)",
-              fontSize: "14px", color: "#7a8fa0", lineHeight: 1.8,
-            }}>
-              {highlighted.map((part, i) =>
-                part.highlight ? (
-                  <mark key={i} style={{
-                    background: "rgba(248,113,113,0.15)", color: "#fca5a5",
-                    borderRadius: "4px", padding: "1px 5px",
-                    border: "1px solid rgba(248,113,113,0.25)",
-                  }}>{part.text}</mark>
-                ) : <span key={i}>{part.text}</span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {}
-        <div style={{
-          marginTop: "14px", padding: "13px 15px", borderRadius: "11px",
-          background: level.trackColor, border: `1px solid ${level.border}`,
-        }}>
-          <p style={{ margin: 0, fontSize: "13px", color: "#7a8fa0", lineHeight: 1.7 }}>
-            {level.tier === 0 && "This comment is safe. No harmful language detected."}
-            {level.tier === 1 && "Minor indicators of negativity detected. May not require action."}
-            {level.tier === 2 && "Likely contains harmful or offensive language. Flag for review."}
-            {level.tier === 3 && "Highly toxic content. Recommend immediate removal."}
-          </p>
-        </div>
-
-        { }
-        <div style={{ display: "flex", gap: "7px", marginTop: "12px", flexWrap: "wrap" }}>
-          {(level.tier === 0 ? ["Approve"] : level.tier === 1 ? ["Review", "Approve"] : level.tier === 2 ? ["Remove", "Flag"] : ["Remove", "Ban User"])
-            .map((action) => (
-              <button key={action} style={{
-                padding: "6px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 700,
-                border: "1px solid rgba(255,255,255,0.07)", cursor: "pointer",
-                background: "rgba(255,255,255,0.03)", color: "#2d3a47",
-                transition: "all 0.15s",
-              }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(99,130,175,0.1)"; e.currentTarget.style.color = "#7a99bd"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.color = "#2d3a47"; }}
-              >{action}</button>
-            ))}
-        </div>
-      </div>
-    );
-  };
-  
   return (
-    <div style={{ minHeight: "100vh", background: "#070b16", color: "#cdd9e5", fontFamily: "'Sora', 'Segoe UI', system-ui, sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:C.bg, color:C.txt, fontFamily:"'Inter',system-ui,sans-serif" }}>
 
-      {/* Radial gradient header atmosphere */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
-        background: "radial-gradient(ellipse 70% 40% at 50% 0%, rgba(30,50,90,0.4), transparent)",
-      }}/>
+      {/* ── NAV ── */}
+      <nav style={{ background:C.card, borderBottom:`1px solid ${C.border}`, padding:"0 32px", height:56, display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:20 }}>
+        {/* Logo */}
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ width:32, height:32, borderRadius:8, background:"#1e293b", border:"1px solid #334155", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+              <path d="M11 2L3 6V12C3 16.4 6.6 20.2 11 21C15.4 20.2 19 16.4 19 12V6L11 2Z" fill="#6366f1" opacity="0.9"/>
+              <path d="M8 11L10.5 13.5L14.5 9.5" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <span style={{ fontSize:17, fontWeight:800, color:"#f0f4ff", letterSpacing:"-0.02em" }}>SafeGuard</span>
+        </div>
 
-      { }
-      <nav style={{
-        position: "sticky", top: 0, zIndex: 50,
-        background: "rgba(7,11,22,0.9)", backdropFilter: "blur(14px)",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 24px", height: "56px",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <rect width="24" height="24" rx="7" fill="rgba(99,130,175,0.15)"/>
-            <path d="M12 4L5 8V13C5 17 8.2 20.7 12 22C15.8 20.7 19 17 19 13V8L12 4Z" stroke="#6382af" strokeWidth="1.4" fill="none"/>
-            <path d="M9 12L11.5 14.5L15.5 10.5" stroke="#34d399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          <span style={{ fontSize: "14px", fontWeight: 800, color: "#cdd9e5", letterSpacing: "-0.02em" }}>SafeGuard</span>
-          <span style={{ fontSize: "10px", padding: "2px 7px", borderRadius: "999px", background: "rgba(99,130,175,0.12)", color: "#6382af", fontWeight: 700, letterSpacing: "0.06em" }}>BETA</span>
+        {/* Tabs */}
+        <div style={{ display:"flex", background:C.bg, borderRadius:10, padding:3, gap:2, border:`1px solid ${C.border}` }}>
+          {TABS.map(([id, lbl]) => (
+            <button key={id} onClick={() => setTab(id)} style={{
+              padding:"7px 20px", borderRadius:8, fontSize:14, fontWeight:600, border:"none", cursor:"pointer", transition:"all 0.18s",
+              background: tab === id ? "#1e293b" : "transparent",
+              color: tab === id ? "#fff" : C.txt2,
+              boxShadow: "none",
+            }}>{lbl}</button>
+          ))}
         </div>
-        <div style={{ display: "flex", gap: "2px" }}>
-          <Tab id="analyze" label="Analyze" />
-          <Tab id="dashboard" label="Dashboard" />
+
+        {/* Live toggle */}
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:13, fontWeight:600, color: live ? "#4ade80" : C.txt2 }}>Live</span>
+          <div onClick={() => setLive(v => !v)} style={{ width:40, height:22, borderRadius:999, background: live ? "#16a34a" : C.border2, cursor:"pointer", position:"relative", transition:"background 0.2s", boxShadow: "none", border:`1px solid ${live ? "#4ade80" : C.border2}` }}>
+            <span style={{ position:"absolute", top:3, left: live ? 21 : 3, width:14, height:14, borderRadius:"50%", background:"#fff", transition:"left 0.2s", boxShadow:"0 1px 4px rgba(0,0,0,0.4)" }} />
+          </div>
         </div>
-        <div style={{ width: "120px" }}/> { }
       </nav>
 
-      { }
-      {activeTab === "analyze" && (
-        <div style={{ maxWidth: "820px", margin: "0 auto", padding: "40px 20px 80px", position: "relative", zIndex: 1 }}>
-          <div style={{ marginBottom: "36px" }}>
-            <h1 style={{ fontSize: "clamp(1.9rem, 4.5vw, 2.8rem)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.1, margin: "0 0 12px", color: "#e2ecf5" }}>
-              Content Moderation
-            </h1>
-            <p style={{ color: "#2d3a47", fontSize: "14px", lineHeight: 1.7, maxWidth: "440px", margin: 0 }}>
-              TF-IDF + Logistic Regression model trained on 160k+ Jigsaw comments.
-              {liveMode ? " Analyzing as you type." : " Hit Ctrl+Enter to analyze."}
-            </p>
-          </div>
+      {/* ── HOW IT WORKS ── */}
+      {tab === "howitworks" && (
+        <div style={{ padding:"48px 40px 80px" }}>
+          <div style={{ maxWidth:900, margin:"0 auto" }}>
 
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: result ? "1fr 1fr" : "1fr",
-            gap: "16px", alignItems: "start",
-          }}>
-            <InputCard />
-            {result && <ResultCard />}
-          </div>
-
-          { }
-          {history.length > 0 && (
-            <div style={{ marginTop: "28px" }}>
-              <div style={{ fontSize: "10px", color: "#1e2d3d", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: "10px" }}>
-                Recent — {history.length} analyzed
+            {/* Hero */}
+            <div style={{ textAlign:"center", marginBottom:56 }}>
+              <div style={{ display:"inline-block", padding:"6px 18px", borderRadius:999, background:"#0e1525", border:"1px solid #1a2540", marginBottom:20 }}>
+                <span style={{ fontSize:12, fontWeight:700, color:"#a5b4fc", letterSpacing:"0.1em", textTransform:"uppercase" }}>Machine Learning Pipeline</span>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                {history.slice(0, 5).map((h, i) => {
-                  const lv = getToxicityLevel(h.result.confidence, h.result.toxic);
-                  return (
-                    <button key={i} onClick={() => { setText(h.text); setResult(h.result); }} style={{
-                      display: "flex", alignItems: "center", gap: "11px",
-                      padding: "9px 13px", borderRadius: "11px",
-                      background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
-                      cursor: "pointer", textAlign: "left", transition: "background 0.15s",
-                    }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
-                    >
-                      <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: lv.color, flexShrink: 0 }}/>
-                      <span style={{ flex: 1, fontSize: "12px", color: "#2d3a47", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.text}</span>
-                      <span style={{ fontSize: "11px", fontWeight: 700, color: lv.color, flexShrink: 0 }}>{lv.label}</span>
-                      <span style={{ fontSize: "10px", color: "#1e2d3d", flexShrink: 0 }}>{Math.round(h.result.confidence * 100)}%</span>
-                    </button>
-                  );
-                })}
+              <h1 style={{ fontSize:48, fontWeight:900, color:"#f0f4ff", margin:"0 0 16px", letterSpacing:"-0.04em", lineHeight:1.1 }}>
+                How <span style={{ color:"#818cf8" }}>SafeGuard</span> works
+              </h1>
+              <p style={{ fontSize:18, color:C.txt2, maxWidth:560, margin:"0 auto", lineHeight:1.7 }}>
+                Real-time toxicity detection using a TF-IDF + Logistic Regression model trained on 160,000+ real-world comments.
+              </p>
+            </div>
+
+            {/* Steps */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:40 }}>
+              {[
+                { step:"01", title:"You type a comment", desc:"In live mode, SafeGuard listens as you type. After each word (Space key), it sends the text for analysis instantly — no button click needed.", color:"#38bdf8", glow:"rgba(56,189,248,0.3)", bg:"rgba(56,189,248,0.06)", icon:<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z M8 10h8 M8 14h5" stroke="#38bdf8" strokeWidth="1.8" strokeLinecap="round" fill="none"/> },
+                { step:"02", title:"TF-IDF vectorises text", desc:"Your comment becomes a numerical vector. TF-IDF gives higher weight to words that are rare in normal text but common in toxic comments.", color:"#a78bfa", glow:"rgba(167,139,250,0.3)", bg:"rgba(167,139,250,0.06)", icon:<><path d="M4 6h16M4 10h12M4 14h8M4 18h4" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round" fill="none"/></> },
+                { step:"03", title:"Logistic Regression classifies", desc:"The vector is fed into a model trained on the Jigsaw Toxic Comment dataset. It outputs a probability score between 0 and 1.", color:"#facc15", glow:"rgba(250,204,21,0.3)", bg:"rgba(250,204,21,0.06)", icon:<><circle cx="12" cy="12" r="9" stroke="#facc15" strokeWidth="1.8" fill="none"/><path d="M8 12l3 3 5-5" stroke="#facc15" strokeWidth="1.8" strokeLinecap="round" fill="none"/></> },
+                { step:"04", title:"Score maps to a level", desc:"Confidence < 30% = Safe. 30-50% = Mildly Toxic. 50-75% = Toxic. > 75% = Extremely Toxic. Harmful words are highlighted in red.", color:"#f87171", glow:"rgba(248,113,113,0.3)", bg:"rgba(248,113,113,0.06)", icon:<path d="M12 2L3 6v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V6l-9-4z" stroke="#f87171" strokeWidth="1.8" fill="none"/> },
+              ].map(({ step, title, desc, color, glow, bg, icon }) => (
+                <div key={step} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:28, position:"relative", overflow:"hidden", transition:"border-color 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = color + "60"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+                >
+                  <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:14 }}>
+                    <div style={{ width:44, height:44, borderRadius:12, background:bg, border:`1px solid ${color}40`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24">{icon}</svg>
+                    </div>
+                    <div>
+                      <div style={{ fontSize:11, fontWeight:800, color, letterSpacing:"0.12em", textTransform:"uppercase", marginBottom:4 }}>{step}</div>
+                      <div style={{ fontSize:17, fontWeight:700, color:"#f0f4ff", lineHeight:1.3 }}>{title}</div>
+                    </div>
+                  </div>
+                  <p style={{ fontSize:14, color:C.txt2, lineHeight:1.75, margin:0 }}>{desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Model stats strip */}
+            <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:"0", overflow:"hidden", marginBottom:24 }}>
+              <div style={{ padding:"14px 24px", borderBottom:`1px solid ${C.border}`, background:"transparent" }}>
+                <span style={{ fontSize:12, fontWeight:700, color:"#818cf8", letterSpacing:"0.1em", textTransform:"uppercase" }}>Model Details</span>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)" }}>
+                {[
+                  { label:"Algorithm",     value:"Logistic Regression", color:"#a78bfa" },
+                  { label:"Vectorizer",    value:"TF-IDF",              color:"#38bdf8" },
+                  { label:"Training data", value:"160k+ comments",      color:"#4ade80" },
+                  { label:"Dataset",       value:"Jigsaw / Kaggle",     color:"#facc15" },
+                  { label:"Accuracy",      value:"~96%",                color:"#fb923c" },
+                  { label:"Backend",       value:"FastAPI + sklearn",   color:"#f472b6" },
+                ].map(({ label, value, color }, i) => (
+                  <div key={label} style={{ padding:"18px 24px", borderRight: i % 3 !== 2 ? `1px solid ${C.border}` : "none", borderBottom: i < 3 ? `1px solid ${C.border}` : "none" }}>
+                    <div style={{ fontSize:11, color:C.txt3, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:6 }}>{label}</div>
+                    <div style={{ fontSize:17, fontWeight:700, color }}>{value}</div>
+                  </div>
+                ))}
               </div>
             </div>
-          )}
+
+            {/* Toxicity levels */}
+            <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, overflow:"hidden", marginBottom:24 }}>
+              <div style={{ padding:"14px 24px", borderBottom:`1px solid ${C.border}`, background:"transparent" }}>
+                <span style={{ fontSize:12, fontWeight:700, color:"#818cf8", letterSpacing:"0.1em", textTransform:"uppercase" }}>Toxicity Levels</span>
+              </div>
+              {[
+                { label:"Safe",            range:"0 – 30%",   color:"#4ade80", desc:"No harmful language detected. Safe to publish." },
+                { label:"Mildly Toxic",    range:"30 – 50%",  color:"#facc15", desc:"Low-level negativity. Worth monitoring but may not need action." },
+                { label:"Toxic",           range:"50 – 75%",  color:"#fb923c", desc:"Harmful or offensive language detected. Flag for human review." },
+                { label:"Extremely Toxic", range:"75 – 100%", color:"#f87171", desc:"Highly toxic. Recommend immediate removal." },
+              ].map(({ label, range, color, desc }, i) => (
+                <div key={label} style={{ display:"flex", alignItems:"center", gap:20, padding:"16px 24px", borderBottom: i < 3 ? `1px solid ${C.border}` : "none", transition:"background 0.15s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.02)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
+                  <div style={{ width:10, height:10, borderRadius:"50%", background:color, flexShrink:0, boxShadow:`0 0 8px ${color}80` }} />
+                  <div style={{ width:140, flexShrink:0 }}>
+                    <div style={{ fontSize:15, fontWeight:700, color }}>{label}</div>
+                    <div style={{ fontSize:12, color:C.txt3, marginTop:2 }}>{range}</div>
+                  </div>
+                  <p style={{ fontSize:14, color:C.txt2, margin:0, lineHeight:1.65 }}>{desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Limitations */}
+            <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, overflow:"hidden" }}>
+              <div style={{ padding:"14px 24px", borderBottom:`1px solid ${C.border}`, background:"transparent" }}>
+                <span style={{ fontSize:12, fontWeight:700, color:"#facc15", letterSpacing:"0.1em", textTransform:"uppercase" }}>Limitations</span>
+              </div>
+              <div style={{ padding:"20px 24px", display:"flex", flexDirection:"column", gap:14 }}>
+                {[
+                  "The model is probabilistic — a high score does not guarantee a comment is toxic, just that it resembles toxic patterns in training data.",
+                  "Sarcasm, irony, and context-dependent language can confuse the model. Tone-based toxicity may not trigger keyword highlights.",
+                  "The keyword highlighter uses regex pattern matching, not the ML model — highlighted words may not be the actual cause of the score.",
+                  "The model was trained on English comments. Performance on other languages is not reliable.",
+                ].map((t, i) => (
+                  <div key={i} style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
+                    <span style={{ fontSize:16, color:"#facc15", flexShrink:0, marginTop:1 }}>⚠</span>
+                    <p style={{ fontSize:14, color:C.txt2, margin:0, lineHeight:1.75 }}>{t}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      { }
-      {activeTab === "dashboard" && (
-        <div style={{ maxWidth: "820px", margin: "0 auto", padding: "40px 20px 80px", position: "relative", zIndex: 1 }}>
-          <h2 style={{ fontSize: "22px", fontWeight: 800, color: "#e2ecf5", letterSpacing: "-0.03em", margin: "0 0 6px" }}>Dashboard</h2>
-          <p style={{ color: "#2d3a47", fontSize: "13px", marginBottom: "28px" }}>
-            {totalAnalyzed === 0 ? "No comments analyzed yet — use the Analyze tab to get started." : `${totalAnalyzed} comment${totalAnalyzed !== 1 ? "s" : ""} analyzed this session.`}
-          </p>
+      {/* ── ANALYZE ── */}
+      {tab === "analyze" && (
+        <div style={{ padding:"40px 40px 80px" }}>
+          <div style={{ maxWidth:1100, margin:"0 auto" }}>
+            <div style={{ marginBottom:28 }}>
+              <h1 style={{ fontSize:32, fontWeight:900, color:"#f0f4ff", margin:"0 0 8px", letterSpacing:"-0.03em" }}>Comment Analyzer</h1>
+              <p style={{ fontSize:15, color:C.txt2, margin:0 }}>{live ? "Updates after each word as you type." : "Press Ctrl+Enter to analyze."}</p>
+            </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px", marginBottom: "20px" }}>
-            <StatCard label="Total Analyzed" value={totalAnalyzed} color="#6382af"/>
-            <StatCard label="Toxic" value={toxicCount} color="#f87171"/>
-            <StatCard label="Safe" value={totalAnalyzed - toxicCount} color="#34d399"/>
-            <StatCard label="Avg Score" value={`${avgScore}%`} color="#fbbf24"/>
-          </div>
+            <div style={{ display:"grid", gridTemplateColumns: result ? "1fr 1fr" : "1fr", gap:16, alignItems:"start" }}>
 
-          { }
-          {totalAnalyzed > 0 && (
-            <div style={{ background: "rgba(10,14,26,0.95)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "16px", padding: "22px", marginBottom: "16px" }}>
-              <div style={{ fontSize: "10px", color: "#1e2d3d", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: "16px" }}>
-                Breakdown by Level
-              </div>
-              {[
-                { label: "Safe",           color: "#34d399", tier: 0 },
-                { label: "Mildly Toxic",   color: "#fbbf24", tier: 1 },
-                { label: "Toxic",          color: "#fb923c", tier: 2 },
-                { label: "Extremely Toxic",color: "#f87171", tier: 3 },
-              ].map(({ label, color, tier }) => {
-                const count = history.filter((h) => getToxicityLevel(h.result.confidence, h.result.toxic).tier === tier).length;
-                return (
-                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "9px" }}>
-                    <span style={{ fontSize: "12px", color: "#2d3a47", width: "105px", flexShrink: 0 }}>{label}</span>
-                    <div style={{ flex: 1, height: "6px", background: "rgba(255,255,255,0.04)", borderRadius: "999px", overflow: "hidden" }}>
-                      <div style={{
-                        height: "100%", background: color, borderRadius: "999px",
-                        width: `${(count / totalAnalyzed) * 100}%`,
-                        transition: "width 0.7s cubic-bezier(0.16,1,0.3,1)",
-                      }}/>
-                    </div>
-                    <span style={{ fontSize: "12px", color, fontWeight: 700, width: "24px", textAlign: "right" }}>{count}</span>
+              {/* Input */}
+              <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, overflow:"hidden" }}>
+                <div style={{ padding:"12px 20px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"space-between", background:"transparent" }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:"#818cf8", letterSpacing:"0.1em", textTransform:"uppercase" }}>Input</span>
+                  <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                    {loading && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ animation:"spin 0.8s linear infinite" }}><circle cx="12" cy="12" r="9" stroke="#1e293b" strokeWidth="2.5"/><path d="M12 3a9 9 0 0 1 9 9" stroke="#818cf8" strokeWidth="2.5" strokeLinecap="round"/></svg>}
+                    <span style={{ fontSize:12, fontWeight:600, color: loading ? "#818cf8" : live ? "#4ade80" : C.txt2 }}>{loading ? "Analyzing…" : live ? "Live" : "Manual"}</span>
                   </div>
-                );
-              })}
-            </div>
-          )}
-
-          { }
-          <div style={{ background: "rgba(10,14,26,0.95)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "16px", padding: "22px", marginBottom: "16px" }}>
-            <div style={{ fontSize: "10px", color: "#1e2d3d", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, marginBottom: "14px" }}>Most Flagged Terms</div>
-            <TopWordsBar words={topWords} />
-          </div>
-
-          { }
-          {history.length > 0 && (
-            <div style={{ background: "rgba(10,14,26,0.95)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "16px", padding: "22px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-                <div style={{ fontSize: "10px", color: "#1e2d3d", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>Comment Log</div>
-                <button onClick={() => { setHistory([]); setResult(null); }} style={{
-                  fontSize: "12px", color: "#1e2d3d", background: "none", border: "none", cursor: "pointer", padding: "3px 8px", borderRadius: "6px",
-                }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#f87171")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#1e2d3d")}
-                >Clear</button>
+                </div>
+                <textarea ref={textareaRef} rows={9} value={text} onChange={e => setText(e.target.value)} onKeyUp={handleKeyUp} onKeyDown={handleKeyDown} placeholder="Type a comment…"
+                  style={{ width:"100%", boxSizing:"border-box", display:"block", background:"transparent", border:"none", borderBottom:`1px solid ${C.border}`, padding:"16px 20px", fontSize:16, color:C.txt, lineHeight:1.75, resize:"none", outline:"none", fontFamily:"inherit" }}
+                />
+                <div style={{ padding:"12px 20px", display:"flex", gap:8, flexWrap:"wrap", alignItems:"center", borderBottom: text ? `1px solid ${C.border}` : "none" }}>
+                  <span style={{ fontSize:12, color:C.txt3, marginRight:4 }}>Try:</span>
+                  {SAMPLES.map(([lbl, sample]) => (
+                    <button key={lbl} onClick={() => { setText(sample); if (live) analyze(sample, true); }}
+                      style={{ padding:"4px 14px", borderRadius:8, fontSize:12, fontWeight:600, background:"transparent", border:`1px solid ${C.border2}`, color:C.txt2, cursor:"pointer", transition:"all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor="#6366f1"; e.currentTarget.style.color="#a5b4fc"; e.currentTarget.style.background="rgba(99,102,241,0.1)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor=C.border2; e.currentTarget.style.color=C.txt2; e.currentTarget.style.background="transparent"; }}
+                    >{lbl}</button>
+                  ))}
+                  {text && <button onClick={() => { setText(""); setResult(null); textareaRef.current?.focus(); }} style={{ marginLeft:"auto", padding:"4px 12px", borderRadius:8, fontSize:12, background:"transparent", border:`1px solid ${C.border2}`, color:C.txt3, cursor:"pointer" }}>Clear</button>}
+                </div>
+                {!live && text && (
+                  <div style={{ padding:"14px 16px" }}>
+                    <button onClick={() => analyze(text)} disabled={!text.trim() || loading} style={{ width:"100%", padding:11, borderRadius:10, fontSize:15, fontWeight:700, border:"none", cursor: !text.trim() || loading ? "not-allowed" : "pointer", background: !text.trim() || loading ? C.border : "#4f46e5", color: !text.trim() || loading ? C.txt3 : "#fff", transition:"all 0.18s" }}>
+                      Analyze <span style={{ opacity:0.5, fontWeight:400, fontSize:12 }}>Ctrl+Enter</span>
+                    </button>
+                  </div>
+                )}
+                {error && <div style={{ margin:"0 16px 14px", padding:"10px 14px", borderRadius:10, background:"rgba(248,113,113,0.1)", border:"1px solid rgba(248,113,113,0.3)", color:"#fca5a5", fontSize:13 }}>{error}</div>}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "5px", maxHeight: "320px", overflowY: "auto" }}>
-                {history.map((h, i) => {
-                  const lv = getToxicityLevel(h.result.confidence, h.result.toxic);
-                  return (
-                    <div key={i} style={{
-                      display: "flex", alignItems: "center", gap: "10px",
-                      padding: "8px 12px", borderRadius: "9px",
-                      background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)",
-                    }}>
-                      <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: lv.color, flexShrink: 0 }}/>
-                      <span style={{ flex: 1, fontSize: "12px", color: "#2d3a47", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.text}</span>
-                      <span style={{ fontSize: "11px", color: lv.color, fontWeight: 700, flexShrink: 0, minWidth: "80px", textAlign: "right" }}>{lv.label}</span>
-                      <span style={{ fontSize: "10px", color: "#1e2d3d", flexShrink: 0 }}>{Math.round(h.result.confidence * 100)}%</span>
+
+              {/* Result */}
+              {result && level && (
+                <div style={{ background:C.card, border:`1px solid ${level.color}40`, borderRadius:16, overflow:"hidden", animation:"fadeUp 0.3s ease both", boxShadow:"none" }}>
+                  <div style={{ padding:"12px 20px", borderBottom:`1px solid ${level.color}30`, background:`${level.color}10`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ width:9, height:9, borderRadius:"50%", background:level.color,  }} />
+                      <span style={{ fontSize:15, fontWeight:800, color:level.color }}>{level.label}</span>
                     </div>
-                  );
-                })}
-              </div>
+                    <span style={{ fontSize:12, fontWeight:600, color:level.color, opacity:0.7 }}>
+                      {["No action","Monitor","Flag","Remove"][level.tier]}
+                    </span>
+                  </div>
+                  <div style={{ padding:20 }}>
+                    <Meter score={result.confidence} color={level.color} glow={level.glow} />
+                    {parts && (
+                      <div style={{ margin:"16px 0" }}>
+                        <p style={{ fontSize:12, color:"#818cf8", fontWeight:700, margin:"0 0 8px", textTransform:"uppercase", letterSpacing:"0.08em" }}>
+                          {hasToxicWords ? "Flagged Words" : "Comment"}
+                        </p>
+                        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"12px 16px", fontSize:15, lineHeight:1.85, color:C.txt2 }}>
+                          {parts.map((part, i) =>
+                            part.toxic
+                              ? <span key={i} style={{ background:"rgba(248,113,113,0.15)", color:"#fca5a5", borderRadius:5, padding:"2px 6px", border:"1px solid rgba(248,113,113,0.35)", fontWeight:700 }}>{part.text}</span>
+                              : <span key={i}>{part.text}</span>
+                          )}
+                        </div>
+                        {!hasToxicWords && result.toxic && <p style={{ fontSize:12, color:C.txt3, margin:"6px 0 0" }}>Tone-based detection — no exact keyword matched.</p>}
+                      </div>
+                    )}
+                    <p style={{ fontSize:14, color:C.txt2, lineHeight:1.7, margin:0 }}>{VERDICTS[level.tier]}</p>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+
+            {history.length > 0 && (
+              <div style={{ marginTop:32 }}>
+                <p style={{ fontSize:12, color:"#818cf8", fontWeight:700, margin:"0 0 12px", textTransform:"uppercase", letterSpacing:"0.08em" }}>Recent ({history.length})</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                  {history.slice(0, 5).map((h, i) => {
+                    const lv = getLevel(h.result.confidence, h.result.toxic);
+                    return (
+                      <button key={i} onClick={() => { setText(h.text); setResult(h.result); }}
+                        style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 16px", borderRadius:10, background:C.card, border:`1px solid ${C.border}`, cursor:"pointer", textAlign:"left", width:"100%", transition:"border-color 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = lv.color + "60"}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+                      >
+                        <span style={{ width:7, height:7, borderRadius:"50%", background:lv.color, flexShrink:0,  }} />
+                        <span style={{ flex:1, fontSize:13, color:C.txt2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{h.text}</span>
+                        <span style={{ fontSize:13, fontWeight:700, color:lv.color, flexShrink:0 }}>{lv.label}</span>
+                        <span style={{ fontSize:12, color:C.txt3, flexShrink:0 }}>{Math.round(h.result.confidence * 100)}%</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── DASHBOARD ── */}
+      {tab === "dashboard" && (
+        <div style={{ padding:"40px 40px 80px" }}>
+          <div style={{ maxWidth:900, margin:"0 auto" }}>
+            <h1 style={{ fontSize:32, fontWeight:900, color:"#f0f4ff", margin:"0 0 8px", letterSpacing:"-0.03em" }}>Dashboard</h1>
+            <p style={{ fontSize:15, color:C.txt2, margin:"0 0 32px" }}>{total === 0 ? "No comments analyzed yet." : `${total} comment${total !== 1 ? "s" : ""} analyzed this session.`}</p>
+
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:20 }}>
+              {[
+                { label:"Total",     value:total,              color:"#818cf8" },
+                { label:"Toxic",     value:toxicCount,         color:"#f87171" },
+                { label:"Safe",      value:total - toxicCount, color:"#4ade80" },
+                { label:"Avg Score", value:`${avgScore}%`,     color:"#facc15" },
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:"20px 22px", position:"relative", overflow:"hidden" }}>
+                  <div style={{ position:"absolute", top:-20, right:-20, width:80, height:80, borderRadius:"50%", background:"transparent" }} />
+                  <p style={{ fontSize:11, color:C.txt3, margin:"0 0 10px", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" }}>{label}</p>
+                  <p style={{ fontSize:34, fontWeight:900, color, margin:0, letterSpacing:"-0.04em",  }}>{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {total > 0 && (
+              <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:"20px 24px", marginBottom:14 }}>
+                <p style={{ fontSize:12, color:"#818cf8", fontWeight:700, margin:"0 0 18px", textTransform:"uppercase", letterSpacing:"0.08em" }}>Level Breakdown</p>
+                {tierData.map(({ label, color }, tier) => (
+                  <div key={tier} style={{ display:"flex", alignItems:"center", gap:14, marginBottom:12 }}>
+                    <span style={{ fontSize:13, color:C.txt2, width:130, flexShrink:0 }}>{label}</span>
+                    <div style={{ flex:1, height:8, background:C.bg, borderRadius:999, overflow:"hidden" }}>
+                      <div style={{ height:"100%", background:color, borderRadius:999, width:`${total ? (tierCounts[tier] / total) * 100 : 0}%`, transition:"width 0.7s cubic-bezier(0.16,1,0.3,1)",  }} />
+                    </div>
+                    <span style={{ fontSize:14, fontWeight:700, color, width:24, textAlign:"right", flexShrink:0 }}>{tierCounts[tier]}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:"20px 24px", marginBottom:14 }}>
+              <p style={{ fontSize:12, color:"#818cf8", fontWeight:700, margin:"0 0 16px", textTransform:"uppercase", letterSpacing:"0.08em" }}>Most Flagged Terms</p>
+              {topWords.length === 0
+                ? <p style={{ fontSize:14, color:C.txt3, margin:0 }}>No toxic terms logged yet.</p>
+                : <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                    {topWords.map(([word, count]) => (
+                      <div key={word} style={{ display:"flex", alignItems:"center", gap:12 }}>
+                        <code style={{ fontSize:13, color:"#f87171", width:110, textAlign:"right", flexShrink:0 }}>{word}</code>
+                        <div style={{ flex:1, height:6, background:C.bg, borderRadius:999, overflow:"hidden" }}>
+                          <div style={{ height:"100%", width:`${(count / topWords[0][1]) * 100}%`, background:"#ef4444", borderRadius:999, transition:"width 0.6s" }} />
+                        </div>
+                        <span style={{ fontSize:12, color:C.txt3, width:24, flexShrink:0 }}>{count}x</span>
+                      </div>
+                    ))}
+                  </div>
+              }
+            </div>
+
+            {history.length > 0 && (
+              <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:"20px 24px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                  <p style={{ fontSize:12, color:"#818cf8", fontWeight:700, margin:0, textTransform:"uppercase", letterSpacing:"0.08em" }}>Comment Log</p>
+                  <button onClick={() => { setHistory([]); setResult(null); }} style={{ fontSize:12, color:C.txt3, background:"none", border:"none", cursor:"pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.color="#f87171"}
+                    onMouseLeave={e => e.currentTarget.style.color=C.txt3}
+                  >Clear all</button>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:4, maxHeight:300, overflowY:"auto" }}>
+                  {history.map((h, i) => {
+                    const lv = getLevel(h.result.confidence, h.result.toxic);
+                    return (
+                      <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:8, background:C.bg }}>
+                        <span style={{ width:6, height:6, borderRadius:"50%", background:lv.color, flexShrink:0,  }} />
+                        <span style={{ flex:1, fontSize:13, color:C.txt2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{h.text}</span>
+                        <span style={{ fontSize:12, fontWeight:700, color:lv.color, flexShrink:0 }}>{lv.label}</span>
+                        <span style={{ fontSize:12, color:C.txt3, flexShrink:0 }}>{Math.round(h.result.confidence * 100)}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+
+      {/* ── BULK UPLOAD ── */}
+      {tab === "bulk" && (
+        <div style={{ padding:"40px 40px 80px" }}>
+          <div style={{ maxWidth:900, margin:"0 auto" }}>
+            <h1 style={{ fontSize:32, fontWeight:900, color:"#f0f4ff", margin:"0 0 8px", letterSpacing:"-0.03em" }}>Bulk Upload</h1>
+            <p style={{ fontSize:15, color:C.txt2, margin:"0 0 32px" }}>
+              Upload a <code style={{ background:C.card, padding:"2px 7px", borderRadius:5, color:"#818cf8", fontSize:14 }}>.txt</code> or <code style={{ background:C.card, padding:"2px 7px", borderRadius:5, color:"#818cf8", fontSize:14 }}>.csv</code> file — one comment per line. Each comment is analyzed and results are shown below.
+            </p>
+
+            {/* Drop zone */}
+            <label htmlFor="bulk-file" style={{ display:"block", marginBottom:20, cursor:"pointer" }}>
+              <div style={{ border:`2px dashed ${C.border2}`, borderRadius:16, padding:"40px 32px", textAlign:"center", background:C.card, transition:"border-color 0.2s" }}
+                onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor="#4f46e5"; }}
+                onDragLeave={e => { e.currentTarget.style.borderColor=C.border2; }}
+                onDrop={e => {
+                  e.preventDefault();
+                  e.currentTarget.style.borderColor=C.border2;
+                  const file = e.dataTransfer.files[0];
+                  if (file) handleBulkFile(file);
+                }}
+              >
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style={{ margin:"0 auto 14px", display:"block" }}>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="#4f46e5" strokeWidth="1.8" strokeLinecap="round"/>
+                  <polyline points="17 8 12 3 7 8" stroke="#4f46e5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <line x1="12" y1="3" x2="12" y2="15" stroke="#4f46e5" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+                <p style={{ fontSize:16, fontWeight:600, color:C.txt, margin:"0 0 6px" }}>Drop your file here</p>
+                <p style={{ fontSize:13, color:C.txt2, margin:"0 0 16px" }}>or click to browse</p>
+                <span style={{ display:"inline-block", padding:"8px 20px", borderRadius:8, background:"#4f46e5", color:"#fff", fontSize:13, fontWeight:600 }}>Choose File</span>
+              </div>
+            </label>
+            <input id="bulk-file" type="file" accept=".txt,.csv" style={{ display:"none" }} onChange={e => { if (e.target.files[0]) handleBulkFile(e.target.files[0]); e.target.value=""; }} />
+
+            {/* Progress */}
+            {bulkLoading && (
+              <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"18px 24px", marginBottom:16 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                  <span style={{ fontSize:13, fontWeight:600, color:C.txt2 }}>Analyzing comments…</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:"#818cf8" }}>{bulkProgress}%</span>
+                </div>
+                <div style={{ height:6, background:C.bg, borderRadius:999, overflow:"hidden" }}>
+                  <div style={{ height:"100%", width:`${bulkProgress}%`, background:"#4f46e5", borderRadius:999, transition:"width 0.3s" }} />
+                </div>
+              </div>
+            )}
+
+            {/* Summary */}
+            {bulkResults.length > 0 && !bulkLoading && (() => {
+              const toxicB = bulkResults.filter(r => r.result?.toxic).length;
+              const safeB = bulkResults.length - toxicB;
+              const avgB = Math.round(bulkResults.filter(r => r.result).reduce((s, r) => s + r.result.confidence, 0) / bulkResults.filter(r => r.result).length * 100);
+              return (
+                <div style={{ marginBottom:16 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:14 }}>
+                    {[
+                      { label:"Total",     value:bulkResults.length, color:"#818cf8" },
+                      { label:"Toxic",     value:toxicB,             color:"#f87171" },
+                      { label:"Safe",      value:safeB,              color:"#4ade80" },
+                      { label:"Avg Score", value:`${avgB}%`,         color:"#facc15" },
+                    ].map(({ label, value, color }) => (
+                      <div key={label} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"16px 18px" }}>
+                        <p style={{ fontSize:11, color:C.txt3, margin:"0 0 8px", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" }}>{label}</p>
+                        <p style={{ fontSize:28, fontWeight:900, color, margin:0, letterSpacing:"-0.03em" }}>{value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Export button */}
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                    <p style={{ fontSize:12, color:"#818cf8", fontWeight:700, margin:0, textTransform:"uppercase", letterSpacing:"0.08em" }}>Results ({bulkResults.length})</p>
+                    <button onClick={() => exportCSV(bulkResults)} style={{ padding:"7px 16px", borderRadius:8, fontSize:12, fontWeight:600, background:"#1e293b", border:`1px solid ${C.border2}`, color:C.txt2, cursor:"pointer", transition:"all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor="#4f46e5"; e.currentTarget.style.color="#a5b4fc"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor=C.border2; e.currentTarget.style.color=C.txt2; }}
+                    >Export CSV</button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Results table */}
+            {bulkResults.length > 0 && (
+              <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, overflow:"hidden" }}>
+                {/* Table header */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 130px 80px", padding:"10px 20px", borderBottom:`1px solid ${C.border}`, background:C.bg }}>
+                  <span style={{ fontSize:11, color:C.txt3, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em" }}>Comment</span>
+                  <span style={{ fontSize:11, color:C.txt3, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em" }}>Level</span>
+                  <span style={{ fontSize:11, color:C.txt3, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", textAlign:"right" }}>Score</span>
+                </div>
+                <div style={{ maxHeight:480, overflowY:"auto" }}>
+                  {bulkResults.map((row, i) => {
+                    const lv = row.result ? getLevel(row.result.confidence, row.result.toxic) : null;
+                    return (
+                      <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 130px 80px", padding:"12px 20px", borderBottom: i < bulkResults.length - 1 ? `1px solid ${C.border}` : "none", alignItems:"center", transition:"background 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
+                        onMouseLeave={e => e.currentTarget.style.background="transparent"}
+                      >
+                        <span style={{ fontSize:13, color: row.error ? "#f87171" : C.txt2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", paddingRight:16 }}>
+                          {row.error ? `Error: ${row.error}` : row.text}
+                        </span>
+                        {lv ? (
+                          <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                            <span style={{ width:6, height:6, borderRadius:"50%", background:lv.color, flexShrink:0 }} />
+                            <span style={{ fontSize:12, fontWeight:600, color:lv.color }}>{lv.label}</span>
+                          </div>
+                        ) : <span style={{ fontSize:12, color:C.txt3 }}>—</span>}
+                        <span style={{ fontSize:13, fontWeight:700, color: lv ? lv.color : C.txt3, textAlign:"right" }}>
+                          {row.result ? `${Math.round(row.result.confidence * 100)}%` : "—"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {bulkResults.length === 0 && !bulkLoading && (
+              <div style={{ textAlign:"center", padding:"48px 24px", background:C.card, border:`1px solid ${C.border}`, borderRadius:14, color:C.txt3 }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style={{ margin:"0 auto 12px", display:"block", opacity:0.4 }}>
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke={C.txt3} strokeWidth="1.5"/>
+                  <polyline points="14 2 14 8 20 8" stroke={C.txt3} strokeWidth="1.5"/>
+                  <line x1="8" y1="13" x2="16" y2="13" stroke={C.txt3} strokeWidth="1.5" strokeLinecap="round"/>
+                  <line x1="8" y1="17" x2="12" y2="17" stroke={C.txt3} strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+                <p style={{ fontSize:15, margin:"0 0 6px", fontWeight:600, color:C.txt2 }}>No file uploaded yet</p>
+                <p style={{ fontSize:13, margin:0 }}>Upload a .txt or .csv file with one comment per line</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        textarea::placeholder { color: #1a2535 !important; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #080d1a; }
+        textarea { caret-color: #818cf8; }
+        textarea::placeholder { color: #1a2540; }
         ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb { background: #1a2540; border-radius: 2px; }
       `}</style>
     </div>
   );
