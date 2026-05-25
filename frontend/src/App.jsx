@@ -98,7 +98,7 @@ export default function App() {
     const ctrl = new AbortController(); abortRef.current = ctrl;
     if (!silent) { setLoading(true); setError(null); }
     try {
-      const res = await axios.post("http://127.0.0.1:8000/predict", { text: input }, { signal: ctrl.signal });
+      const res = await axios.post("https://toxic-comments-detector.onrender.com/predict", { text: input }, { signal: ctrl.signal });
       setResult(res.data);
       setHistory(prev => [{ text: input.slice(0, 120), result: res.data }, ...prev.filter(h => h.text !== input.slice(0, 120))].slice(0, 50));
     } catch (err) {
@@ -137,7 +137,7 @@ export default function App() {
     for (let i = 0; i < lines.length; i++) {
       const comment = lines[i];
       try {
-        const res = await axios.post("http://127.0.0.1:8000/predict", { text: comment });
+        const res = await axios.post("https://toxic-comments-detector.onrender.com/predict", { text: comment });
         results.push({ text: comment, result: res.data });
         setHistory(prev => [{ text: comment.slice(0, 120), result: res.data }, ...prev].slice(0, 50));
       } catch { results.push({ text: comment, result: null, error: "Failed" }); }
