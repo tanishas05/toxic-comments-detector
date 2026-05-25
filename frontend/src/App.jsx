@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import axios from "axios";
 import * as pdfjsLib from "pdfjs-dist";
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
-
+const API_URL = "https://toxic-comments-detector.onrender.com";
 const TOXIC_PATTERNS = [
   /\b(idiot|stupid|dumb|moron|fool|loser|pathetic)\b/gi,
   /\b(hate|despise|disgusting|disgusted)\b/gi,
@@ -98,12 +98,12 @@ export default function App() {
     const ctrl = new AbortController(); abortRef.current = ctrl;
     if (!silent) { setLoading(true); setError(null); }
     try {
-      const res = await axios.post("https://toxic-comments-detector.onrender.com/predict", { text: input }, { signal: ctrl.signal });
+      const res = await axios.post(`${API_URL}/predict`, { text: input }, { signal: ctrl.signal });
       setResult(res.data);
       setHistory(prev => [{ text: input.slice(0, 120), result: res.data }, ...prev.filter(h => h.text !== input.slice(0, 120))].slice(0, 50));
     } catch (err) {
       if (axios.isCancel(err) || err.name === "CanceledError") return;
-      if (!silent) setError("Backend unreachable. Run: uvicorn app:app --reload");
+      if (!silent) setError("Unable to connect to backend server.");
     } finally {
       if (!silent) setLoading(false);
       textareaRef.current?.focus();
@@ -137,7 +137,7 @@ export default function App() {
     for (let i = 0; i < lines.length; i++) {
       const comment = lines[i];
       try {
-        const res = await axios.post("https://toxic-comments-detector.onrender.com/predict", { text: comment });
+        const res = await axios.post(`${API_URL}/predict`, { text: comment });
         results.push({ text: comment, result: res.data });
         setHistory(prev => [{ text: comment.slice(0, 120), result: res.data }, ...prev].slice(0, 50));
       } catch { results.push({ text: comment, result: null, error: "Failed" }); }
