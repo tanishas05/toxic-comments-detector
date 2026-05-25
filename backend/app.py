@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import joblib
 from fastapi.middleware.cors import CORSMiddleware
+from flask_cors import CORS
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
