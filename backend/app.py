@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 import joblib
+import os
 from fastapi.middleware.cors import CORSMiddleware
-from flask_cors import CORS
+
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -11,7 +13,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-model = joblib.load("model.pkl")
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+model = joblib.load(os.path.join(BASE_DIR, "model.pkl"))
 
 class Comment(BaseModel):
     text: str
