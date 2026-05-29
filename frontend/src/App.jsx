@@ -65,7 +65,7 @@ function Meter({ score, color }) {
   return (
     <div style={{ marginBottom: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-        <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 500, letterSpacing: "0.04em" }}>Toxicity Score</span>
+        <span style={{ fontSize: 16, color: "#6b7280", fontWeight: 500, letterSpacing: "0.04em" }}>Toxicity Score</span>
         <span style={{ fontSize: 32, fontWeight: 700, color, fontVariantNumeric: "tabular-nums" }}>{pct}<span style={{ fontSize: 16, opacity: 0.5 }}>%</span></span>
       </div>
       <div style={{ height: 5, background: "#1f2937", borderRadius: 999 }}>
@@ -98,7 +98,7 @@ export default function App() {
     const ctrl = new AbortController(); abortRef.current = ctrl;
     if (!silent) { setLoading(true); setError(null); }
     try {
-      const res = await axios.post("https://toxic-comments-detector.onrender.com/predict", { text: input }, { signal: ctrl.signal });
+      const res = await axios.post("http://127.0.0.1:8000/predict", { text: input }, { signal: ctrl.signal });
       setResult(res.data);
       setHistory(prev => [{ text: input.slice(0, 120), result: res.data }, ...prev.filter(h => h.text !== input.slice(0, 120))].slice(0, 50));
     } catch (err) {
@@ -137,7 +137,7 @@ export default function App() {
     for (let i = 0; i < lines.length; i++) {
       const comment = lines[i];
       try {
-        const res = await axios.post("https://toxic-comments-detector.onrender.com/predict", { text: comment });
+        const res = await axios.post("http://127.0.0.1:8000/predict", { text: comment });
         results.push({ text: comment, result: res.data });
         setHistory(prev => [{ text: comment.slice(0, 120), result: res.data }, ...prev].slice(0, 50));
       } catch { results.push({ text: comment, result: null, error: "Failed" }); }
@@ -176,7 +176,7 @@ export default function App() {
   const TABS = [["howitworks", "How it works"], ["analyze", "Analyze"], ["bulk", "Bulk Upload"], ["dashboard", "Dashboard"]];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#111318", color: "#e4e7ed", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 14 }}>
+    <div style={{ minHeight: "100vh", background: "#111318", color: "#e4e7ed", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16 }}>
 
       {/* NAV — full width, items spread across */}
       <nav style={{ height: 52, borderBottom: "1px solid #1e2128", display: "flex", alignItems: "center", padding: "0 28px", gap: 0 }}>
@@ -186,14 +186,14 @@ export default function App() {
             <path d="M10 2L3 5.5V10.5C3 14.1 6.1 17.4 10 18C13.9 17.4 17 14.1 17 10.5V5.5L10 2Z" fill="#1e2128" stroke="#4f46e5" strokeWidth="1.4"/>
             <path d="M7 10l2.5 2.5L13 9" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#f3f4f6", letterSpacing: "-0.01em" }}>SafeGuard</span>
+          <span style={{ fontSize: 16, fontWeight: 600, color: "#f3f4f6", letterSpacing: "-0.01em" }}>Wordikt</span>
         </div>
 
         {/* Tabs — center */}
         <div style={{ display: "flex", gap: 2, position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
           {TABS.map(([id, lbl]) => (
             <button key={id} onClick={() => setTab(id)} style={{
-              padding: "5px 16px", borderRadius: 7, fontSize: 13, fontWeight: 500,
+              padding: "5px 16px", borderRadius: 7, fontSize: 16, fontWeight: 500,
               border: "none", cursor: "pointer", transition: "all 0.15s",
               background: tab === id ? "#1e2128" : "transparent",
               color: tab === id ? "#f3f4f6" : "#6b7280",
@@ -204,7 +204,7 @@ export default function App() {
 
         {/* Live toggle — right */}
         <div style={{ display: "flex", alignItems: "center", gap: 7, marginLeft: "auto" }}>
-          <span style={{ fontSize: 12, color: live ? "#22c55e" : "#6b7280", fontWeight: 500 }}>Live</span>
+          <span style={{ fontSize: 16, color: live ? "#22c55e" : "#6b7280", fontWeight: 500 }}>Live</span>
           <div onClick={() => setLive(v => !v)} style={{ width: 34, height: 18, borderRadius: 999, background: live ? "#16a34a" : "#2d3139", cursor: "pointer", position: "relative", transition: "background 0.2s", border: "1px solid #374151" }}>
             <span style={{ position: "absolute", top: 2, left: live ? 17 : 2, width: 12, height: 12, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
           </div>
@@ -232,8 +232,8 @@ export default function App() {
             ].map(({ n, title, desc, color }) => (
               <div key={n} style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, padding: 24 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color, letterSpacing: "0.1em", marginBottom: 10 }}>{n}</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: "#f3f4f6", marginBottom: 8 }}>{title}</div>
-                <p style={{ fontSize: 13, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>{desc}</p>
+                <div style={{ fontSize: 16, fontWeight: 600, color: "#f3f4f6", marginBottom: 8 }}>{title}</div>
+                <p style={{ fontSize: 16, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>{desc}</p>
               </div>
             ))}
           </div>
@@ -254,7 +254,7 @@ export default function App() {
               ].map(({ label, value }, i) => (
                 <div key={label} style={{ padding: "16px 20px", borderRight: i % 3 !== 2 ? "1px solid #1e2128" : "none", borderBottom: i < 3 ? "1px solid #1e2128" : "none" }}>
                   <div style={{ fontSize: 10, color: "#4b5563", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>{label}</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: "#e4e7ed" }}>{value}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: "#e4e7ed" }}>{value}</div>
                 </div>
               ))}
             </div>
@@ -273,9 +273,9 @@ export default function App() {
             ].map(({ label, range, color, desc }, i) => (
               <div key={label} style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 20px", borderBottom: i < 3 ? "1px solid #1e2128" : "none" }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color, width: 120, flexShrink: 0 }}>{label}</span>
+                <span style={{ fontSize: 16, fontWeight: 600, color, width: 120, flexShrink: 0 }}>{label}</span>
                 <span style={{ fontSize: 11, color: "#4b5563", width: 70, flexShrink: 0 }}>{range}</span>
-                <span style={{ fontSize: 13, color: "#6b7280" }}>{desc}</span>
+                <span style={{ fontSize: 16, color: "#6b7280" }}>{desc}</span>
               </div>
             ))}
           </div>
@@ -294,7 +294,7 @@ export default function App() {
               ].map((t, i) => (
                 <div key={i} style={{ display: "flex", gap: 10 }}>
                   <span style={{ color: "#eab308", flexShrink: 0, marginTop: 1 }}>—</span>
-                  <p style={{ fontSize: 13, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>{t}</p>
+                  <p style={{ fontSize: 16, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>{t}</p>
                 </div>
               ))}
             </div>
@@ -307,7 +307,7 @@ export default function App() {
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "40px 24px 80px" }}>
           <div style={{ marginBottom: 24 }}>
             <h1 style={{ fontSize: 26, fontWeight: 700, color: "#f3f4f6", margin: "0 0 6px", letterSpacing: "-0.02em" }}>Analyze a comment</h1>
-            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>{live ? "Updates after each word as you type." : "Press Ctrl+Enter to analyze."}</p>
+            <p style={{ fontSize: 16, color: "#6b7280", margin: 0 }}>{live ? "Updates after each word as you type." : "Press Ctrl+Enter to analyze."}</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: result ? "1fr 1fr" : "1fr", gap: 12, alignItems: "start" }}>
@@ -321,7 +321,7 @@ export default function App() {
                 </div>
               </div>
               <textarea ref={textareaRef} rows={8} value={text} onChange={e => setText(e.target.value)} onKeyUp={handleKeyUp} onKeyDown={handleKeyDown} placeholder="Type a comment…"
-                style={{ width: "100%", boxSizing: "border-box", display: "block", background: "#111318", border: "none", borderBottom: "1px solid #1e2128", padding: "14px 16px", fontSize: 14, color: "#e4e7ed", lineHeight: 1.75, resize: "none", outline: "none", fontFamily: "inherit" }}
+                style={{ width: "100%", boxSizing: "border-box", display: "block", background: "#111318", border: "none", borderBottom: "1px solid #1e2128", padding: "14px 16px", fontSize: 16, color: "#e4e7ed", lineHeight: 1.75, resize: "none", outline: "none", fontFamily: "inherit" }}
               />
               <div style={{ padding: "10px 16px", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                 <span style={{ fontSize: 11, color: "#374151", marginRight: 4 }}>Try:</span>
@@ -336,7 +336,7 @@ export default function App() {
               </div>
               {!live && text && (
                 <div style={{ padding: "0 12px 12px" }}>
-                  <button onClick={() => analyze(text)} disabled={!text.trim() || loading} style={{ width: "100%", padding: 9, borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: !text.trim() || loading ? "not-allowed" : "pointer", background: !text.trim() || loading ? "#1e2128" : "#4f46e5", color: !text.trim() || loading ? "#374151" : "#fff", transition: "all 0.15s" }}>
+                  <button onClick={() => analyze(text)} disabled={!text.trim() || loading} style={{ width: "100%", padding: 9, borderRadius: 8, fontSize: 16, fontWeight: 600, border: "none", cursor: !text.trim() || loading ? "not-allowed" : "pointer", background: !text.trim() || loading ? "#1e2128" : "#4f46e5", color: !text.trim() || loading ? "#374151" : "#fff", transition: "all 0.15s" }}>
                     Analyze <span style={{ opacity: 0.5, fontWeight: 400, fontSize: 11 }}>Ctrl+Enter</span>
                   </button>
                 </div>
@@ -350,7 +350,7 @@ export default function App() {
                 <div style={{ padding: "10px 16px", borderBottom: `1px solid ${level.border}`, background: level.bg, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                     <span style={{ width: 7, height: 7, borderRadius: "50%", background: level.color }} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: level.color }}>{level.label}</span>
+                    <span style={{ fontSize: 16, fontWeight: 600, color: level.color }}>{level.label}</span>
                   </div>
                   <span style={{ fontSize: 11, color: level.color, opacity: 0.6 }}>{["No action", "Monitor", "Flag", "Remove"][level.tier]}</span>
                 </div>
@@ -359,7 +359,7 @@ export default function App() {
                   {parts && (
                     <div style={{ marginBottom: 14 }}>
                       <p style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, margin: "0 0 7px", textTransform: "uppercase", letterSpacing: "0.07em" }}>{hasToxicWords ? "Flagged words" : "Comment"}</p>
-                      <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, padding: "10px 12px", fontSize: 13, lineHeight: 1.85, color: "#9ca3af" }}>
+                      <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, padding: "10px 12px", fontSize: 16, lineHeight: 1.85, color: "#9ca3af" }}>
                         {parts.map((part, i) =>
                           part.toxic
                             ? <span key={i} style={{ background: "rgba(239,68,68,0.12)", color: "#fca5a5", borderRadius: 4, padding: "1px 5px", border: "1px solid rgba(239,68,68,0.25)", fontWeight: 600 }}>{part.text}</span>
@@ -369,7 +369,7 @@ export default function App() {
                       {!hasToxicWords && result.toxic && <p style={{ fontSize: 11, color: "#4b5563", margin: "6px 0 0" }}>Tone-based detection — no exact keyword matched.</p>}
                     </div>
                   )}
-                  <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.65, margin: 0 }}>{VERDICTS[level.tier]}</p>
+                  <p style={{ fontSize: 16, color: "#6b7280", lineHeight: 1.65, margin: 0 }}>{VERDICTS[level.tier]}</p>
                 </div>
               </div>
             )}
@@ -388,8 +388,8 @@ export default function App() {
                       onMouseLeave={e => e.currentTarget.style.borderColor = "#1e2128"}
                     >
                       <span style={{ width: 6, height: 6, borderRadius: "50%", background: lv.color, flexShrink: 0 }} />
-                      <span style={{ flex: 1, fontSize: 12, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.text}</span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: lv.color, flexShrink: 0 }}>{lv.label}</span>
+                      <span style={{ flex: 1, fontSize: 16, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.text}</span>
+                      <span style={{ fontSize: 16, fontWeight: 600, color: lv.color, flexShrink: 0 }}>{lv.label}</span>
                       <span style={{ fontSize: 11, color: "#374151", flexShrink: 0 }}>{Math.round(h.result.confidence * 100)}%</span>
                     </button>
                   );
@@ -405,7 +405,7 @@ export default function App() {
         <div style={{ maxWidth: 860, margin: "0 auto", padding: "40px 24px 80px" }}>
           <div style={{ marginBottom: 28 }}>
             <h1 style={{ fontSize: 26, fontWeight: 700, color: "#f3f4f6", margin: "0 0 6px", letterSpacing: "-0.02em" }}>Bulk upload</h1>
-            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>Upload a .txt, .csv, or .pdf file. One comment per line for text files. PDFs are split into sentences automatically.</p>
+            <p style={{ fontSize: 16, color: "#6b7280", margin: 0 }}>Upload a .txt, .csv, or .pdf file. One comment per line for text files. PDFs are split into sentences automatically.</p>
           </div>
 
           <label htmlFor="bulk-file" style={{ display: "block", marginBottom: 20, cursor: "pointer" }}>
@@ -419,9 +419,9 @@ export default function App() {
                 <polyline points="17 8 12 3 7 8" stroke="#4f46e5" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                 <line x1="12" y1="3" x2="12" y2="15" stroke="#4f46e5" strokeWidth="1.6" strokeLinecap="round"/>
               </svg>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "#e4e7ed", margin: "0 0 4px" }}>Drop your file here</p>
-              <p style={{ fontSize: 12, color: "#4b5563", margin: "0 0 14px" }}>or click to browse — .txt  .csv  .pdf</p>
-              <span style={{ padding: "7px 18px", borderRadius: 7, background: "#4f46e5", color: "#fff", fontSize: 12, fontWeight: 600 }}>Choose file</span>
+              <p style={{ fontSize: 16, fontWeight: 600, color: "#e4e7ed", margin: "0 0 4px" }}>Drop your file here</p>
+              <p style={{ fontSize: 16, color: "#4b5563", margin: "0 0 14px" }}>or click to browse — .txt  .csv  .pdf</p>
+              <span style={{ padding: "7px 18px", borderRadius: 7, background: "#4f46e5", color: "#fff", fontSize: 16, fontWeight: 600 }}>Choose file</span>
             </div>
           </label>
           <input id="bulk-file" type="file" accept=".txt,.csv,.pdf" style={{ display: "none" }} onChange={e => { if (e.target.files[0]) handleBulkFile(e.target.files[0]); e.target.value = ""; }} />
@@ -429,8 +429,8 @@ export default function App() {
           {bulkLoading && (
             <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 10, padding: "16px 20px", marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontSize: 13, color: "#9ca3af" }}>Analyzing comments…</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#4f46e5" }}>{bulkProgress}%</span>
+                <span style={{ fontSize: 16, color: "#9ca3af" }}>Analyzing comments…</span>
+                <span style={{ fontSize: 16, fontWeight: 600, color: "#4f46e5" }}>{bulkProgress}%</span>
               </div>
               <div style={{ height: 4, background: "#1e2128", borderRadius: 999 }}>
                 <div style={{ height: "100%", width: `${bulkProgress}%`, background: "#4f46e5", borderRadius: 999, transition: "width 0.3s" }} />
@@ -454,7 +454,7 @@ export default function App() {
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                   <p style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, margin: 0, textTransform: "uppercase", letterSpacing: "0.07em" }}>Results ({bulkResults.length})</p>
-                  <button onClick={() => exportCSV(bulkResults)} style={{ padding: "6px 14px", borderRadius: 7, fontSize: 12, fontWeight: 500, background: "transparent", border: "1px solid #2d3139", color: "#6b7280", cursor: "pointer" }}
+                  <button onClick={() => exportCSV(bulkResults)} style={{ padding: "6px 14px", borderRadius: 7, fontSize: 16, fontWeight: 500, background: "transparent", border: "1px solid #2d3139", color: "#6b7280", cursor: "pointer" }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = "#4f46e5"; e.currentTarget.style.color = "#818cf8"; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = "#2d3139"; e.currentTarget.style.color = "#6b7280"; }}
                   >Export CSV</button>
@@ -476,9 +476,9 @@ export default function App() {
                       onMouseEnter={e => e.currentTarget.style.background = "#1a1c23"}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                     >
-                      <span style={{ fontSize: 12, color: row.error ? "#f87171" : "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 14 }}>{row.error ? `Error: ${row.error}` : row.text}</span>
-                      {lv ? <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: lv.color }} /><span style={{ fontSize: 12, fontWeight: 600, color: lv.color }}>{lv.label}</span></div> : <span style={{ fontSize: 12, color: "#374151" }}>—</span>}
-                      <span style={{ fontSize: 12, fontWeight: 600, color: lv ? lv.color : "#374151", textAlign: "right" }}>{row.result ? `${Math.round(row.result.confidence * 100)}%` : "—"}</span>
+                      <span style={{ fontSize: 16, color: row.error ? "#f87171" : "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 14 }}>{row.error ? `Error: ${row.error}` : row.text}</span>
+                      {lv ? <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: lv.color }} /><span style={{ fontSize: 16, fontWeight: 600, color: lv.color }}>{lv.label}</span></div> : <span style={{ fontSize: 16, color: "#374151" }}>—</span>}
+                      <span style={{ fontSize: 16, fontWeight: 600, color: lv ? lv.color : "#374151", textAlign: "right" }}>{row.result ? `${Math.round(row.result.confidence * 100)}%` : "—"}</span>
                     </div>
                   );
                 })}
@@ -488,8 +488,8 @@ export default function App() {
 
           {bulkResults.length === 0 && !bulkLoading && (
             <div style={{ textAlign: "center", padding: "40px 24px", background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, color: "#374151" }}>
-              <p style={{ fontSize: 14, margin: "0 0 4px", fontWeight: 500, color: "#6b7280" }}>No file uploaded yet</p>
-              <p style={{ fontSize: 12, margin: 0 }}>Supports .txt and .csv (one comment per line) or .pdf</p>
+              <p style={{ fontSize: 16, margin: "0 0 4px", fontWeight: 500, color: "#6b7280" }}>No file uploaded yet</p>
+              <p style={{ fontSize: 16, margin: 0 }}>Supports .txt and .csv (one comment per line) or .pdf</p>
             </div>
           )}
         </div>
@@ -500,7 +500,7 @@ export default function App() {
         <div style={{ maxWidth: 860, margin: "0 auto", padding: "40px 24px 80px" }}>
           <div style={{ marginBottom: 28 }}>
             <h1 style={{ fontSize: 26, fontWeight: 700, color: "#f3f4f6", margin: "0 0 6px", letterSpacing: "-0.02em" }}>Dashboard</h1>
-            <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>{total === 0 ? "No comments analyzed yet." : `${total} comment${total !== 1 ? "s" : ""} this session.`}</p>
+            <p style={{ fontSize: 16, color: "#6b7280", margin: 0 }}>{total === 0 ? "No comments analyzed yet." : `${total} comment${total !== 1 ? "s" : ""} this session.`}</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 16 }}>
@@ -517,11 +517,11 @@ export default function App() {
               <p style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, margin: "0 0 16px", textTransform: "uppercase", letterSpacing: "0.07em" }}>Breakdown</p>
               {tierLabels.map((label, tier) => (
                 <div key={tier} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                  <span style={{ fontSize: 12, color: "#6b7280", width: 120, flexShrink: 0 }}>{label}</span>
+                  <span style={{ fontSize: 16, color: "#6b7280", width: 120, flexShrink: 0 }}>{label}</span>
                   <div style={{ flex: 1, height: 5, background: "#1e2128", borderRadius: 999, overflow: "hidden" }}>
                     <div style={{ height: "100%", background: tierColors[tier], borderRadius: 999, width: `${total ? (tierCounts[tier] / total) * 100 : 0}%`, transition: "width 0.6s cubic-bezier(0.16,1,0.3,1)" }} />
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: tierColors[tier], width: 20, textAlign: "right", flexShrink: 0 }}>{tierCounts[tier]}</span>
+                  <span style={{ fontSize: 16, fontWeight: 600, color: tierColors[tier], width: 20, textAlign: "right", flexShrink: 0 }}>{tierCounts[tier]}</span>
                 </div>
               ))}
             </div>
@@ -530,11 +530,11 @@ export default function App() {
           <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, padding: "18px 20px", marginBottom: 12 }}>
             <p style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, margin: "0 0 14px", textTransform: "uppercase", letterSpacing: "0.07em" }}>Most flagged terms</p>
             {topWords.length === 0
-              ? <p style={{ fontSize: 13, color: "#374151", margin: 0 }}>No toxic terms logged yet.</p>
+              ? <p style={{ fontSize: 16, color: "#374151", margin: 0 }}>No toxic terms logged yet.</p>
               : <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                   {topWords.map(([word, count]) => (
                     <div key={word} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <code style={{ fontSize: 12, color: "#9ca3af", width: 100, textAlign: "right", flexShrink: 0 }}>{word}</code>
+                      <code style={{ fontSize: 16, color: "#9ca3af", width: 100, textAlign: "right", flexShrink: 0 }}>{word}</code>
                       <div style={{ flex: 1, height: 4, background: "#1e2128", borderRadius: 999, overflow: "hidden" }}>
                         <div style={{ height: "100%", width: `${(count / topWords[0][1]) * 100}%`, background: "#ef4444", borderRadius: 999, transition: "width 0.6s" }} />
                       </div>
@@ -549,7 +549,7 @@ export default function App() {
             <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, padding: "18px 20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <p style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, margin: 0, textTransform: "uppercase", letterSpacing: "0.07em" }}>Comment log</p>
-                <button onClick={() => { setHistory([]); setResult(null); }} style={{ fontSize: 12, color: "#374151", background: "none", border: "none", cursor: "pointer" }}
+                <button onClick={() => { setHistory([]); setResult(null); }} style={{ fontSize: 16, color: "#374151", background: "none", border: "none", cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
                   onMouseLeave={e => e.currentTarget.style.color = "#374151"}
                 >Clear all</button>
@@ -560,7 +560,7 @@ export default function App() {
                   return (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 7, background: "#111318" }}>
                       <span style={{ width: 5, height: 5, borderRadius: "50%", background: lv.color, flexShrink: 0 }} />
-                      <span style={{ flex: 1, fontSize: 12, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.text}</span>
+                      <span style={{ flex: 1, fontSize: 16, color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.text}</span>
                       <span style={{ fontSize: 11, fontWeight: 600, color: lv.color, flexShrink: 0 }}>{lv.label}</span>
                       <span style={{ fontSize: 11, color: "#374151", flexShrink: 0 }}>{Math.round(h.result.confidence * 100)}%</span>
                     </div>
