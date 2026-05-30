@@ -85,6 +85,8 @@ export default function App() {
   const [tab, setTab] = useState("howitworks");
   const [history, setHistory] = useState([]);
   const [live, setLive] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [error, setError] = useState(null);
   const [bulkResults, setBulkResults] = useState([]);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -209,33 +211,63 @@ export default function App() {
     <div style={{ minHeight: "100vh", background: "#111318", color: "#e4e7ed", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16 }}>
 
       {/* NAV */}
-      <nav style={{ borderBottom: "1px solid #1e2128", background: "#111318", position: "sticky", top: 0, zIndex: 50, display: "flex", flexDirection: "column" }}>
-        {/* Logo + toggle row */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", height: 48, flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-              <path d="M10 2L3 5.5V10.5C3 14.1 6.1 17.4 10 18C13.9 17.4 17 14.1 17 10.5V5.5L10 2Z" fill="#1e2128" stroke="#4f46e5" strokeWidth="1.4"/>
-              <path d="M7 10l2.5 2.5L13 9" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", letterSpacing: "-0.02em" }}>Wordikt</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <span style={{ fontSize: 13, color: live ? "#22c55e" : "#6b7280", fontWeight: 500 }}>Live</span>
-            <div onClick={() => setLive(v => !v)} style={{ width: 34, height: 18, borderRadius: 999, background: live ? "#16a34a" : "#2d3139", cursor: "pointer", position: "relative", transition: "background 0.2s", border: "1px solid #374151", flexShrink: 0 }}>
-              <span style={{ position: "absolute", top: 2, left: live ? 17 : 2, width: 12, height: 12, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
-            </div>
-          </div>
+      <nav style={{ borderBottom: "1px solid #1e2128", background: "#111318", position: "sticky", top: 0, zIndex: 50, height: 56, display: "flex", alignItems: "center", padding: "0 24px" }}>
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2L3 5.5V10.5C3 14.1 6.1 17.4 10 18C13.9 17.4 17 14.1 17 10.5V5.5L10 2Z" fill="#1e2128" stroke="#4f46e5" strokeWidth="1.4"/>
+            <path d="M7 10l2.5 2.5L13 9" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span style={{ fontSize: 17, fontWeight: 700, color: "#f3f4f6", letterSpacing: "-0.02em" }}>Wordikt</span>
         </div>
-        {/* Tabs row */}
-        <div style={{ display: "flex", borderTop: "1px solid #1e2128" }}>
+
+        {/* Desktop tabs — centered */}
+        <div style={{ display: "flex", gap: 2, position: "absolute", left: "50%", transform: "translateX(-50%)" }} className="desktop-tabs">
           {TABS.map(([id, lbl]) => (
             <button key={id} onClick={() => setTab(id)}
-              style={{ flex: 1, padding: "9px 4px", fontSize: 13, fontWeight: 500, border: "none", borderBottom: tab === id ? "2px solid #4f46e5" : "2px solid transparent", cursor: "pointer", transition: "all 0.18s", background: "transparent", color: tab === id ? "#818cf8" : "#6b7280", whiteSpace: "nowrap" }}
-              onMouseEnter={e => { if (tab !== id) e.currentTarget.style.color = "#e4e7ed"; }}
-              onMouseLeave={e => { if (tab !== id) e.currentTarget.style.color = "#6b7280"; }}
+              style={{ padding: "6px 18px", borderRadius: 7, fontSize: 14, fontWeight: 500, border: "none", cursor: "pointer", transition: "all 0.18s", background: tab === id ? "#4f46e5" : "transparent", color: tab === id ? "#fff" : "#6b7280" }}
+              onMouseEnter={e => { if (tab !== id) { e.currentTarget.style.background = "#1e2128"; e.currentTarget.style.color = "#e4e7ed"; } }}
+              onMouseLeave={e => { if (tab !== id) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#6b7280"; } }}
             >{lbl}</button>
           ))}
         </div>
+
+        {/* Right side */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Live toggle */}
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }} className="desktop-live">
+            <span style={{ fontSize: 13, color: live ? "#22c55e" : "#6b7280", fontWeight: 500 }}>Live</span>
+            <div onClick={() => setLive(v => !v)} style={{ width: 34, height: 18, borderRadius: 999, background: live ? "#16a34a" : "#2d3139", cursor: "pointer", position: "relative", transition: "background 0.2s", border: "1px solid #374151" }}>
+              <span style={{ position: "absolute", top: 2, left: live ? 17 : 2, width: 12, height: 12, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
+            </div>
+          </div>
+          {/* Hamburger — mobile only */}
+          <button className="hamburger" onClick={() => setMenuOpen(v => !v)} style={{ display: "none", background: "none", border: "none", cursor: "pointer", padding: 4, color: "#9ca3af" }}>
+            {menuOpen
+              ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            }
+          </button>
+        </div>
+
+        {/* Mobile dropdown menu */}
+        {menuOpen && (
+          <div className="mobile-menu" style={{ position: "absolute", top: 56, left: 0, right: 0, background: "#16181e", borderBottom: "1px solid #1e2128", zIndex: 100, display: "none", flexDirection: "column" }}>
+            {TABS.map(([id, lbl]) => (
+              <button key={id} onClick={() => { setTab(id); setMenuOpen(false); }}
+                style={{ padding: "14px 20px", fontSize: 15, fontWeight: tab === id ? 600 : 400, border: "none", borderLeft: tab === id ? "3px solid #4f46e5" : "3px solid transparent", cursor: "pointer", background: tab === id ? "rgba(79,70,229,0.08)" : "transparent", color: tab === id ? "#818cf8" : "#9ca3af", textAlign: "left", transition: "all 0.15s" }}
+                onMouseEnter={e => { if (tab !== id) { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.color = "#e4e7ed"; } }}
+                onMouseLeave={e => { if (tab !== id) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#9ca3af"; } }}
+              >{lbl}</button>
+            ))}
+            <div style={{ padding: "12px 20px", borderTop: "1px solid #1e2128", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 13, color: live ? "#22c55e" : "#6b7280" }}>Live detection</span>
+              <div onClick={() => setLive(v => !v)} style={{ width: 34, height: 18, borderRadius: 999, background: live ? "#16a34a" : "#2d3139", cursor: "pointer", position: "relative", border: "1px solid #374151" }}>
+                <span style={{ position: "absolute", top: 2, left: live ? 17 : 2, width: 12, height: 12, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ── HOW IT WORKS ── */}
@@ -673,7 +705,10 @@ export default function App() {
 
         /* Mobile */
         @media (max-width: 640px) {
-          nav { font-size: 13px; }
+          .desktop-tabs { display: none !important; }
+          .desktop-live { display: none !important; }
+          .hamburger { display: flex !important; }
+          .mobile-menu { display: flex !important; }
           .page-content { padding: 20px 16px 60px !important; }
           .grid-2col { grid-template-columns: 1fr !important; }
           .grid-4col { grid-template-columns: 1fr 1fr !important; }
