@@ -208,40 +208,39 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: "#111318", color: "#e4e7ed", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16 }}>
 
-      {/* NAV — full width, items spread across */}
-      <nav style={{ height: 58, borderBottom: "1px solid #1e2128", display: "flex", alignItems: "center", padding: "0 28px", gap: 0 }}>
-        {/* Logo — left */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: "auto" }}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M10 2L3 5.5V10.5C3 14.1 6.1 17.4 10 18C13.9 17.4 17 14.1 17 10.5V5.5L10 2Z" fill="#1e2128" stroke="#4f46e5" strokeWidth="1.4"/>
-            <path d="M7 10l2.5 2.5L13 9" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          <span style={{ fontSize: 17, fontWeight: 700, color: "#f3f4f6", letterSpacing: "-0.02em" }}>Wordikt</span>
+      {/* NAV */}
+      <nav style={{ borderBottom: "1px solid #1e2128", background: "#111318", position: "sticky", top: 0, zIndex: 50, display: "flex", flexDirection: "column" }}>
+        {/* Logo + toggle row */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", height: 48, flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+              <path d="M10 2L3 5.5V10.5C3 14.1 6.1 17.4 10 18C13.9 17.4 17 14.1 17 10.5V5.5L10 2Z" fill="#1e2128" stroke="#4f46e5" strokeWidth="1.4"/>
+              <path d="M7 10l2.5 2.5L13 9" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span style={{ fontSize: 16, fontWeight: 700, color: "#f3f4f6", letterSpacing: "-0.02em" }}>Wordikt</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <span style={{ fontSize: 13, color: live ? "#22c55e" : "#6b7280", fontWeight: 500 }}>Live</span>
+            <div onClick={() => setLive(v => !v)} style={{ width: 34, height: 18, borderRadius: 999, background: live ? "#16a34a" : "#2d3139", cursor: "pointer", position: "relative", transition: "background 0.2s", border: "1px solid #374151", flexShrink: 0 }}>
+              <span style={{ position: "absolute", top: 2, left: live ? 17 : 2, width: 12, height: 12, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
+            </div>
+          </div>
         </div>
-
-        {/* Tabs — center */}
-        <div style={{ display: "flex", gap: 2, position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+        {/* Tabs row */}
+        <div style={{ display: "flex", borderTop: "1px solid #1e2128" }}>
           {TABS.map(([id, lbl]) => (
             <button key={id} onClick={() => setTab(id)}
-              style={{ padding: "6px 18px", borderRadius: 7, fontSize: 14, fontWeight: 500, border: "none", cursor: "pointer", transition: "all 0.18s", background: tab === id ? "#4f46e5" : "transparent", color: tab === id ? "#fff" : "#6b7280" }}
-              onMouseEnter={e => { if (tab !== id) { e.currentTarget.style.background = "#1e2128"; e.currentTarget.style.color = "#e4e7ed"; } }}
-              onMouseLeave={e => { if (tab !== id) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#6b7280"; } }}
+              style={{ flex: 1, padding: "9px 4px", fontSize: 13, fontWeight: 500, border: "none", borderBottom: tab === id ? "2px solid #4f46e5" : "2px solid transparent", cursor: "pointer", transition: "all 0.18s", background: "transparent", color: tab === id ? "#818cf8" : "#6b7280", whiteSpace: "nowrap" }}
+              onMouseEnter={e => { if (tab !== id) e.currentTarget.style.color = "#e4e7ed"; }}
+              onMouseLeave={e => { if (tab !== id) e.currentTarget.style.color = "#6b7280"; }}
             >{lbl}</button>
           ))}
-        </div>
-
-        {/* Live toggle — right */}
-        <div style={{ display: "flex", alignItems: "center", gap: 7, marginLeft: "auto" }}>
-          <span style={{ fontSize: 14, color: live ? "#22c55e" : "#6b7280", fontWeight: 500 }}>Live</span>
-          <div onClick={() => setLive(v => !v)} style={{ width: 34, height: 18, borderRadius: 999, background: live ? "#16a34a" : "#2d3139", cursor: "pointer", position: "relative", transition: "background 0.2s", border: "1px solid #374151" }}>
-            <span style={{ position: "absolute", top: 2, left: live ? 17 : 2, width: 12, height: 12, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
-          </div>
         </div>
       </nav>
 
       {/* ── HOW IT WORKS ── */}
       {tab === "howitworks" && (
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px 60px" }}>
+        <div className="page-content" style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px 60px" }}>
           <div style={{ marginBottom: 48 }}>
             <p style={{ fontSize: 12, fontWeight: 600, color: "#4f46e5", letterSpacing: "0.07em", textTransform: "uppercase", margin: "0 0 12px" }}>How it works</p>
             <h1 style={{ fontSize: 32, fontWeight: 700, color: "#f3f4f6", margin: "0 0 14px", letterSpacing: "-0.03em", lineHeight: 1.2 }}>ML-powered toxicity detection</h1>
@@ -251,7 +250,7 @@ export default function App() {
           </div>
 
           {/* Steps */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 32 }}>
+          <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 32 }}>
             {[
               { n: "01", title: "You type a comment", desc: "In live mode, the model runs after every word you type. No button needed — just press space.", color: "#4f46e5" },
               { n: "02", title: "TF-IDF vectorises text", desc: "Your comment becomes a vector. Words rare in normal text but common in toxic comments get higher weight.", color: "#4f46e5" },
@@ -271,7 +270,7 @@ export default function App() {
             <div style={{ padding: "14px 20px", borderBottom: "1px solid #1e2128" }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", letterSpacing: "0.07em", textTransform: "uppercase" }}>Model details</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)" }}>
+            <div className="grid-3col" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)" }}>
               {[
                 { label: "Algorithm",     value: "LinearSVC"          },
                 { label: "Vectorizer",    value: "TF-IDF char n-grams" },
@@ -332,13 +331,13 @@ export default function App() {
 
       {/* ── ANALYZE ── */}
       {tab === "analyze" && (
-        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px 60px" }}>
+        <div className="page-content" style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px 60px" }}>
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, color: "#f3f4f6", margin: "0 0 8px", letterSpacing: "-0.02em" }}>Analyze a comment</h1>
+            <h1 className="page-title" style={{ fontSize: 28, fontWeight: 700, color: "#f3f4f6", margin: "0 0 8px", letterSpacing: "-0.02em" }}>Analyze a comment</h1>
             <p style={{ fontSize: 15, color: "#6b7280", margin: 0 }}>{live ? "Updates after each word as you type." : "Press Ctrl+Enter to analyze."}</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: result ? "1fr 1fr" : "1fr", gap: 12, alignItems: "start" }}>
+          <div className="grid-2col" style={{ display: "grid", gridTemplateColumns: result ? "1fr 1fr" : "1fr", gap: 12, alignItems: "start" }}>
             {/* Input */}
             <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, overflow: "hidden" }}>
               <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e2128", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -405,7 +404,13 @@ export default function App() {
 
           {history.length > 0 && (
             <div style={{ marginTop: 28 }}>
-              <p style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.07em" }}>Recent ({history.length})</p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <p style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, margin: 0, textTransform: "uppercase", letterSpacing: "0.07em" }}>Recent ({history.length})</p>
+                <button onClick={() => { setHistory([]); setResult(null); }} style={{ fontSize: 12, color: "#374151", background: "none", border: "none", cursor: "pointer", padding: "2px 6px" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
+                  onMouseLeave={e => e.currentTarget.style.color = "#374151"}
+                >Clear</button>
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 {history.slice(0, 5).map((h, i) => {
                   const lv = getLevel(h.result.confidence, h.result.toxic);
@@ -430,9 +435,9 @@ export default function App() {
 
       {/* ── BULK ── */}
       {tab === "bulk" && (
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px 60px" }}>
+        <div className="page-content" style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px 60px" }}>
           <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, color: "#f3f4f6", margin: "0 0 8px", letterSpacing: "-0.02em" }}>Bulk upload</h1>
+            <h1 className="page-title" style={{ fontSize: 28, fontWeight: 700, color: "#f3f4f6", margin: "0 0 8px", letterSpacing: "-0.02em" }}>Bulk upload</h1>
             <p style={{ fontSize: 15, color: "#6b7280", margin: 0 }}>Upload a .txt, .csv, or .pdf file. One comment per line for text files. PDFs are split into sentences automatically.</p>
           </div>
 
@@ -497,7 +502,7 @@ export default function App() {
             const ab = Math.round(bulkResults.filter(r => r.result).reduce((s, r) => s + r.result.confidence, 0) / bulkResults.filter(r => r.result).length * 100);
             return (
               <div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 14 }}>
+                <div className="grid-4col" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 14 }}>
                   {[{ label: "Total", value: bulkResults.length, color: "#818cf8" }, { label: "Toxic", value: tb, color: "#f87171" }, { label: "Safe", value: sb, color: "#4ade80" }, { label: "Avg Score", value: `${ab}%`, color: "#facc15" }].map(({ label, value, color }) => (
                     <div key={label} style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 10, padding: "14px 16px" }}>
                       <p style={{ fontSize: 11, color: "#4b5563", margin: "0 0 6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
@@ -507,10 +512,16 @@ export default function App() {
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                   <p style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, margin: 0, textTransform: "uppercase", letterSpacing: "0.07em" }}>Results ({bulkResults.length})</p>
-                  <button onClick={() => exportCSV(bulkResults)} style={{ padding: "6px 14px", borderRadius: 7, fontSize: 16, fontWeight: 500, background: "transparent", border: "1px solid #2d3139", color: "#6b7280", cursor: "pointer" }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = "#4f46e5"; e.currentTarget.style.color = "#818cf8"; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = "#2d3139"; e.currentTarget.style.color = "#6b7280"; }}
-                  >Export CSV</button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => exportCSV(bulkResults)} style={{ padding: "6px 14px", borderRadius: 7, fontSize: 13, fontWeight: 500, background: "transparent", border: "1px solid #2d3139", color: "#6b7280", cursor: "pointer", transition: "all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = "#4f46e5"; e.currentTarget.style.color = "#818cf8"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "#2d3139"; e.currentTarget.style.color = "#6b7280"; }}
+                    >Export CSV</button>
+                    <button onClick={() => { setBulkResults([]); setBulkProgress(0); setBulkTotal(0); }} style={{ padding: "6px 14px", borderRadius: 7, fontSize: 13, fontWeight: 500, background: "transparent", border: "1px solid #2d3139", color: "#6b7280", cursor: "pointer", transition: "all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = "#ef4444"; e.currentTarget.style.color = "#f87171"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "#2d3139"; e.currentTarget.style.color = "#6b7280"; }}
+                    >Clear</button>
+                  </div>
                 </div>
               </div>
             );
@@ -518,14 +529,14 @@ export default function App() {
 
           {bulkResults.length > 0 && (
             <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 70px", padding: "9px 18px", borderBottom: "1px solid #1e2128", background: "#111318" }}>
+              <div className="bulk-table" style={{ display: "grid", gridTemplateColumns: "1fr 130px 70px", padding: "9px 18px", borderBottom: "1px solid #1e2128", background: "#111318" }}>
                 {["Comment", "Level", "Score"].map(h => <span key={h} style={{ fontSize: 10, color: "#374151", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</span>)}
               </div>
               <div style={{ maxHeight: 460, overflowY: "auto" }}>
                 {bulkResults.map((row, i) => {
                   const lv = row.result ? getLevel(row.result.confidence, row.result.toxic) : null;
                   return (
-                    <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 130px 70px", padding: "11px 18px", borderBottom: i < bulkResults.length - 1 ? "1px solid #1e2128" : "none", alignItems: "center", transition: "background 0.15s" }}
+                    <div key={i} className="bulk-table" style={{ display: "grid", gridTemplateColumns: "1fr 130px 70px", padding: "11px 18px", borderBottom: i < bulkResults.length - 1 ? "1px solid #1e2128" : "none", alignItems: "center", transition: "background 0.15s" }}
                       onMouseEnter={e => e.currentTarget.style.background = "#1a1c23"}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                     >
@@ -550,13 +561,13 @@ export default function App() {
 
       {/* ── DASHBOARD ── */}
       {tab === "dashboard" && (
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px 60px" }}>
+        <div className="page-content" style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px 60px" }}>
           <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, color: "#f3f4f6", margin: "0 0 8px", letterSpacing: "-0.02em" }}>Dashboard</h1>
+            <h1 className="page-title" style={{ fontSize: 28, fontWeight: 700, color: "#f3f4f6", margin: "0 0 8px", letterSpacing: "-0.02em" }}>Dashboard</h1>
             <p style={{ fontSize: 15, color: "#6b7280", margin: 0 }}>{total === 0 ? "No comments analyzed yet." : `${total} comment${total !== 1 ? "s" : ""} this session.`}</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 16 }}>
+          <div className="grid-4col" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 16 }}>
             {[{ label: "Total", value: total, color: "#e4e7ed" }, { label: "Toxic", value: toxicCount, color: "#f87171" }, { label: "Safe", value: total - toxicCount, color: "#4ade80" }, { label: "Avg Score", value: `${avgScore}%`, color: "#eab308" }].map(({ label, value, color }) => (
               <div key={label} style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 10, padding: "16px 18px" }}>
                 <p style={{ fontSize: 11, color: "#4b5563", margin: "0 0 8px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
@@ -627,7 +638,7 @@ export default function App() {
 
 
       {/* Footer */}
-      <footer style={{ borderTop: "1px solid #1e2128", padding: "20px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <footer className="footer" style={{ borderTop: "1px solid #1e2128", padding: "20px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div style={{ fontSize: 14, color: "#374151" }}>
           Built by <span style={{ color: "#e4e7ed", fontWeight: 600 }}>Tanisha Sharma</span> · Wordikt © 2025
         </div>
@@ -659,6 +670,18 @@ export default function App() {
         textarea::placeholder { color: #2d3139; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #1e2128; border-radius: 2px; }
+
+        /* Mobile */
+        @media (max-width: 640px) {
+          nav { font-size: 13px; }
+          .page-content { padding: 20px 16px 60px !important; }
+          .grid-2col { grid-template-columns: 1fr !important; }
+          .grid-4col { grid-template-columns: 1fr 1fr !important; }
+          .grid-3col { grid-template-columns: 1fr 1fr !important; }
+          .bulk-table { grid-template-columns: 1fr 90px 60px !important; }
+          h1.page-title { font-size: 22px !important; }
+          .footer { padding: 16px !important; flex-direction: column !important; gap: 10px !important; align-items: flex-start !important; }
+        }
       `}</style>
     </div>
   );
