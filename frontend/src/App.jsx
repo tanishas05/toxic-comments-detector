@@ -116,7 +116,16 @@ export default function App() {
     }
   };
 
-  const handleKeyUp = e => { if (!live) return; if (e.key === " ") { const v = e.target.value.trim(); if (v) analyze(v, true); } };
+  const liveDebounceRef = useRef(null);
+  const handleKeyUp = e => {
+    if (!live) return;
+    if (e.key === " ") {
+      const v = e.target.value.trim();
+      if (!v) return;
+      clearTimeout(liveDebounceRef.current);
+      liveDebounceRef.current = setTimeout(() => analyze(v, true), 800);
+    }
+  };
   const handleKeyDown = e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); analyze(text); } };
 
   const extractLinesFromFile = async (file) => {
