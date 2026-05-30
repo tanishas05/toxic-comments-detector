@@ -71,7 +71,7 @@ function Meter({ score, color }) {
       <div style={{ height: 5, background: "#1f2937", borderRadius: 999 }}>
         <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 999, transition: "width 0.5s cubic-bezier(0.16,1,0.3,1)" }} />
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 10, color: "#374151", letterSpacing: "0.06em" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 11, color: "#374151", letterSpacing: "0.05em" }}>
         <span>SAFE</span><span>EXTREME</span>
       </div>
     </div>
@@ -98,7 +98,7 @@ export default function App() {
     const ctrl = new AbortController(); abortRef.current = ctrl;
     if (!silent) { setLoading(true); setError(null); }
     try {
-      const res = await axios.post("http://127.0.0.1:8000/predict", { text: input }, { signal: ctrl.signal });
+      const res = await axios.post("https://tanishas05-wordikt-backend.hf.space/predict", { text: input }, { signal: ctrl.signal });
       setResult(res.data);
       setHistory(prev => [{ text: input.slice(0, 120), result: res.data }, ...prev.filter(h => h.text !== input.slice(0, 120))].slice(0, 50));
     } catch (err) {
@@ -137,7 +137,7 @@ export default function App() {
     for (let i = 0; i < lines.length; i++) {
       const comment = lines[i];
       try {
-        const res = await axios.post("http://127.0.0.1:8000/predict", { text: comment });
+        const res = await axios.post("https://tanishas05-wordikt-backend.hf.space/predict", { text: comment });
         results.push({ text: comment, result: res.data });
         setHistory(prev => [{ text: comment.slice(0, 120), result: res.data }, ...prev].slice(0, 50));
       } catch { results.push({ text: comment, result: null, error: "Failed" }); }
@@ -179,32 +179,30 @@ export default function App() {
     <div style={{ minHeight: "100vh", background: "#111318", color: "#e4e7ed", fontFamily: "'Inter', system-ui, sans-serif", fontSize: 16 }}>
 
       {/* NAV — full width, items spread across */}
-      <nav style={{ height: 52, borderBottom: "1px solid #1e2128", display: "flex", alignItems: "center", padding: "0 28px", gap: 0 }}>
+      <nav style={{ height: 58, borderBottom: "1px solid #1e2128", display: "flex", alignItems: "center", padding: "0 28px", gap: 0 }}>
         {/* Logo — left */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginRight: "auto" }}>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M10 2L3 5.5V10.5C3 14.1 6.1 17.4 10 18C13.9 17.4 17 14.1 17 10.5V5.5L10 2Z" fill="#1e2128" stroke="#4f46e5" strokeWidth="1.4"/>
             <path d="M7 10l2.5 2.5L13 9" stroke="#22c55e" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          <span style={{ fontSize: 16, fontWeight: 600, color: "#f3f4f6", letterSpacing: "-0.01em" }}>Wordikt</span>
+          <span style={{ fontSize: 17, fontWeight: 700, color: "#f3f4f6", letterSpacing: "-0.02em" }}>Wordikt</span>
         </div>
 
         {/* Tabs — center */}
         <div style={{ display: "flex", gap: 2, position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
           {TABS.map(([id, lbl]) => (
-            <button key={id} onClick={() => setTab(id)} style={{
-              padding: "5px 16px", borderRadius: 7, fontSize: 16, fontWeight: 500,
-              border: "none", cursor: "pointer", transition: "all 0.15s",
-              background: tab === id ? "#1e2128" : "transparent",
-              color: tab === id ? "#f3f4f6" : "#6b7280",
-              outline: tab === id ? "1px solid #2d3139" : "none",
-            }}>{lbl}</button>
+            <button key={id} onClick={() => setTab(id)}
+              style={{ padding: "6px 18px", borderRadius: 7, fontSize: 14, fontWeight: 500, border: "none", cursor: "pointer", transition: "all 0.18s", background: tab === id ? "#4f46e5" : "transparent", color: tab === id ? "#fff" : "#6b7280" }}
+              onMouseEnter={e => { if (tab !== id) { e.currentTarget.style.background = "#1e2128"; e.currentTarget.style.color = "#e4e7ed"; } }}
+              onMouseLeave={e => { if (tab !== id) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#6b7280"; } }}
+            >{lbl}</button>
           ))}
         </div>
 
         {/* Live toggle — right */}
         <div style={{ display: "flex", alignItems: "center", gap: 7, marginLeft: "auto" }}>
-          <span style={{ fontSize: 16, color: live ? "#22c55e" : "#6b7280", fontWeight: 500 }}>Live</span>
+          <span style={{ fontSize: 14, color: live ? "#22c55e" : "#6b7280", fontWeight: 500 }}>Live</span>
           <div onClick={() => setLive(v => !v)} style={{ width: 34, height: 18, borderRadius: 999, background: live ? "#16a34a" : "#2d3139", cursor: "pointer", position: "relative", transition: "background 0.2s", border: "1px solid #374151" }}>
             <span style={{ position: "absolute", top: 2, left: live ? 17 : 2, width: 12, height: 12, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
           </div>
@@ -215,9 +213,9 @@ export default function App() {
       {tab === "howitworks" && (
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px 60px" }}>
           <div style={{ marginBottom: 48 }}>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "#4f46e5", letterSpacing: "0.1em", textTransform: "uppercase", margin: "0 0 12px" }}>How it works</p>
-            <h1 style={{ fontSize: 36, fontWeight: 700, color: "#f3f4f6", margin: "0 0 14px", letterSpacing: "-0.03em", lineHeight: 1.2 }}>ML-powered toxicity detection</h1>
-            <p style={{ fontSize: 16, color: "#6b7280", margin: 0, lineHeight: 1.7, maxWidth: 520 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: "#4f46e5", letterSpacing: "0.07em", textTransform: "uppercase", margin: "0 0 12px" }}>How it works</p>
+            <h1 style={{ fontSize: 32, fontWeight: 700, color: "#f3f4f6", margin: "0 0 14px", letterSpacing: "-0.03em", lineHeight: 1.2 }}>ML-powered toxicity detection</h1>
+            <p style={{ fontSize: 15, color: "#6b7280", margin: 0, lineHeight: 1.7, maxWidth: 520 }}>
               Trained on 160,000+ real-world English and Hinglish comments using TF-IDF vectorization and a LinearSVC classifier.
             </p>
           </div>
@@ -231,17 +229,17 @@ export default function App() {
               { n: "04", title: "Score maps to a level", desc: "0–30% Safe. 30–50% Mildly Toxic. 50–75% Toxic. 75%+ Extremely Toxic. Harmful words highlighted in red.", color: "#4f46e5" },
             ].map(({ n, title, desc, color }) => (
               <div key={n} style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, padding: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color, letterSpacing: "0.1em", marginBottom: 10 }}>{n}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color, letterSpacing: "0.07em", marginBottom: 10 }}>{n}</div>
                 <div style={{ fontSize: 16, fontWeight: 600, color: "#f3f4f6", marginBottom: 8 }}>{title}</div>
-                <p style={{ fontSize: 16, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>{desc}</p>
+                <p style={{ fontSize: 15, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>{desc}</p>
               </div>
             ))}
           </div>
 
           {/* Model details */}
           <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, overflow: "hidden", marginBottom: 12 }}>
-            <div style={{ padding: "12px 20px", borderBottom: "1px solid #1e2128" }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", letterSpacing: "0.08em", textTransform: "uppercase" }}>Model details</span>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #1e2128" }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", letterSpacing: "0.07em", textTransform: "uppercase" }}>Model details</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)" }}>
               {[
@@ -253,7 +251,7 @@ export default function App() {
                 { label: "Backend",       value: "FastAPI + sklearn"  },
               ].map(({ label, value }, i) => (
                 <div key={label} style={{ padding: "16px 20px", borderRight: i % 3 !== 2 ? "1px solid #1e2128" : "none", borderBottom: i < 3 ? "1px solid #1e2128" : "none" }}>
-                  <div style={{ fontSize: 10, color: "#4b5563", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 5 }}>{label}</div>
+                  <div style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 5 }}>{label}</div>
                   <div style={{ fontSize: 16, fontWeight: 600, color: "#e4e7ed" }}>{value}</div>
                 </div>
               ))}
@@ -262,8 +260,8 @@ export default function App() {
 
           {/* Levels */}
           <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, overflow: "hidden", marginBottom: 12 }}>
-            <div style={{ padding: "12px 20px", borderBottom: "1px solid #1e2128" }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", letterSpacing: "0.08em", textTransform: "uppercase" }}>Toxicity levels</span>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #1e2128" }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", letterSpacing: "0.07em", textTransform: "uppercase" }}>Toxicity levels</span>
             </div>
             {[
               { label: "Safe",            range: "0–30%",   color: "#22c55e", desc: "No harmful language. Safe to publish." },
@@ -275,15 +273,15 @@ export default function App() {
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0 }} />
                 <span style={{ fontSize: 16, fontWeight: 600, color, width: 120, flexShrink: 0 }}>{label}</span>
                 <span style={{ fontSize: 11, color: "#4b5563", width: 70, flexShrink: 0 }}>{range}</span>
-                <span style={{ fontSize: 16, color: "#6b7280" }}>{desc}</span>
+                <span style={{ fontSize: 15, color: "#6b7280" }}>{desc}</span>
               </div>
             ))}
           </div>
 
           {/* Limitations */}
           <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, overflow: "hidden" }}>
-            <div style={{ padding: "12px 20px", borderBottom: "1px solid #1e2128" }}>
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", letterSpacing: "0.08em", textTransform: "uppercase" }}>Limitations</span>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #1e2128" }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", letterSpacing: "0.07em", textTransform: "uppercase" }}>Limitations</span>
             </div>
             <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
               {[
@@ -294,7 +292,7 @@ export default function App() {
               ].map((t, i) => (
                 <div key={i} style={{ display: "flex", gap: 10 }}>
                   <span style={{ color: "#eab308", flexShrink: 0, marginTop: 1 }}>—</span>
-                  <p style={{ fontSize: 16, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>{t}</p>
+                  <p style={{ fontSize: 15, color: "#6b7280", margin: 0, lineHeight: 1.7 }}>{t}</p>
                 </div>
               ))}
             </div>
@@ -306,33 +304,33 @@ export default function App() {
       {tab === "analyze" && (
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px 60px" }}>
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: "#f3f4f6", margin: "0 0 6px", letterSpacing: "-0.02em" }}>Analyze a comment</h1>
-            <p style={{ fontSize: 16, color: "#6b7280", margin: 0 }}>{live ? "Updates after each word as you type." : "Press Ctrl+Enter to analyze."}</p>
+            <h1 style={{ fontSize: 28, fontWeight: 700, color: "#f3f4f6", margin: "0 0 8px", letterSpacing: "-0.02em" }}>Analyze a comment</h1>
+            <p style={{ fontSize: 15, color: "#6b7280", margin: 0 }}>{live ? "Updates after each word as you type." : "Press Ctrl+Enter to analyze."}</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: result ? "1fr 1fr" : "1fr", gap: 12, alignItems: "start" }}>
             {/* Input */}
             <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, overflow: "hidden" }}>
               <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e2128", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", letterSpacing: "0.08em", textTransform: "uppercase" }}>Input</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", letterSpacing: "0.07em", textTransform: "uppercase" }}>Input</span>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {loading && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 0.8s linear infinite" }}><circle cx="12" cy="12" r="9" stroke="#2d3139" strokeWidth="2.5"/><path d="M12 3a9 9 0 0 1 9 9" stroke="#4f46e5" strokeWidth="2.5" strokeLinecap="round"/></svg>}
                   <span style={{ fontSize: 11, color: loading ? "#4f46e5" : live ? "#22c55e" : "#6b7280" }}>{loading ? "analyzing…" : live ? "live" : "manual"}</span>
                 </div>
               </div>
               <textarea ref={textareaRef} rows={8} value={text} onChange={e => setText(e.target.value)} onKeyUp={handleKeyUp} onKeyDown={handleKeyDown} placeholder="Type a comment…"
-                style={{ width: "100%", boxSizing: "border-box", display: "block", background: "#111318", border: "none", borderBottom: "1px solid #1e2128", padding: "14px 16px", fontSize: 16, color: "#e4e7ed", lineHeight: 1.75, resize: "none", outline: "none", fontFamily: "inherit" }}
+                style={{ width: "100%", boxSizing: "border-box", display: "block", background: "#111318", border: "none", borderBottom: "1px solid #1e2128", padding: "14px 16px", fontSize: 15, color: "#e4e7ed", lineHeight: 1.75, resize: "none", outline: "none", fontFamily: "inherit" }}
               />
               <div style={{ padding: "10px 16px", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                <span style={{ fontSize: 11, color: "#374151", marginRight: 4 }}>Try:</span>
+                <span style={{ fontSize: 13, color: "#374151", marginRight: 4 }}>Try:</span>
                 {SAMPLES.map(([lbl, sample]) => (
                   <button key={lbl} onClick={() => { setText(sample); if (live) analyze(sample, true); }}
-                    style={{ padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 500, background: "transparent", border: "1px solid #1e2128", color: "#6b7280", cursor: "pointer", transition: "all 0.15s" }}
+                    style={{ padding: "3px 10px", borderRadius: 6, fontSize: 13, fontWeight: 500, background: "transparent", border: "1px solid #1e2128", color: "#6b7280", cursor: "pointer", transition: "all 0.15s" }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = "#4f46e5"; e.currentTarget.style.color = "#818cf8"; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = "#1e2128"; e.currentTarget.style.color = "#6b7280"; }}
                   >{lbl}</button>
                 ))}
-                {text && <button onClick={() => { setText(""); setResult(null); textareaRef.current?.focus(); }} style={{ marginLeft: "auto", padding: "3px 10px", borderRadius: 6, fontSize: 11, background: "transparent", border: "1px solid #1e2128", color: "#4b5563", cursor: "pointer" }}>Clear</button>}
+                {text && <button onClick={() => { setText(""); setResult(null); textareaRef.current?.focus(); }} style={{ marginLeft: "auto", padding: "4px 12px", borderRadius: 6, fontSize: 13, background: "transparent", border: "1px solid #1e2128", color: "#4b5563", cursor: "pointer" }}>Clear</button>}
               </div>
               {!live && text && (
                 <div style={{ padding: "0 12px 12px" }}>
@@ -404,8 +402,8 @@ export default function App() {
       {tab === "bulk" && (
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px 60px" }}>
           <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: "#f3f4f6", margin: "0 0 6px", letterSpacing: "-0.02em" }}>Bulk upload</h1>
-            <p style={{ fontSize: 16, color: "#6b7280", margin: 0 }}>Upload a .txt, .csv, or .pdf file. One comment per line for text files. PDFs are split into sentences automatically.</p>
+            <h1 style={{ fontSize: 28, fontWeight: 700, color: "#f3f4f6", margin: "0 0 8px", letterSpacing: "-0.02em" }}>Bulk upload</h1>
+            <p style={{ fontSize: 15, color: "#6b7280", margin: 0 }}>Upload a .txt, .csv, or .pdf file. One comment per line for text files. PDFs are split into sentences automatically.</p>
           </div>
 
           <label htmlFor="bulk-file" style={{ display: "block", marginBottom: 20, cursor: "pointer" }}>
@@ -420,7 +418,7 @@ export default function App() {
                 <line x1="12" y1="3" x2="12" y2="15" stroke="#4f46e5" strokeWidth="1.6" strokeLinecap="round"/>
               </svg>
               <p style={{ fontSize: 16, fontWeight: 600, color: "#e4e7ed", margin: "0 0 4px" }}>Drop your file here</p>
-              <p style={{ fontSize: 16, color: "#4b5563", margin: "0 0 14px" }}>or click to browse — .txt  .csv  .pdf</p>
+              <p style={{ fontSize: 15, color: "#4b5563", margin: "0 0 14px" }}>or click to browse — .txt  .csv  .pdf</p>
               <span style={{ padding: "7px 18px", borderRadius: 7, background: "#4f46e5", color: "#fff", fontSize: 16, fontWeight: 600 }}>Choose file</span>
             </div>
           </label>
@@ -429,7 +427,7 @@ export default function App() {
           {bulkLoading && (
             <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 10, padding: "16px 20px", marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontSize: 16, color: "#9ca3af" }}>Analyzing comments…</span>
+                <span style={{ fontSize: 15, color: "#9ca3af" }}>Analyzing comments…</span>
                 <span style={{ fontSize: 16, fontWeight: 600, color: "#4f46e5" }}>{bulkProgress}%</span>
               </div>
               <div style={{ height: 4, background: "#1e2128", borderRadius: 999 }}>
@@ -447,7 +445,7 @@ export default function App() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 14 }}>
                   {[{ label: "Total", value: bulkResults.length, color: "#818cf8" }, { label: "Toxic", value: tb, color: "#f87171" }, { label: "Safe", value: sb, color: "#4ade80" }, { label: "Avg Score", value: `${ab}%`, color: "#facc15" }].map(({ label, value, color }) => (
                     <div key={label} style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 10, padding: "14px 16px" }}>
-                      <p style={{ fontSize: 10, color: "#4b5563", margin: "0 0 6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
+                      <p style={{ fontSize: 11, color: "#4b5563", margin: "0 0 6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
                       <p style={{ fontSize: 24, fontWeight: 700, color, margin: 0 }}>{value}</p>
                     </div>
                   ))}
@@ -477,7 +475,7 @@ export default function App() {
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                     >
                       <span style={{ fontSize: 16, color: row.error ? "#f87171" : "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", paddingRight: 14 }}>{row.error ? `Error: ${row.error}` : row.text}</span>
-                      {lv ? <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: lv.color }} /><span style={{ fontSize: 16, fontWeight: 600, color: lv.color }}>{lv.label}</span></div> : <span style={{ fontSize: 16, color: "#374151" }}>—</span>}
+                      {lv ? <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: lv.color }} /><span style={{ fontSize: 16, fontWeight: 600, color: lv.color }}>{lv.label}</span></div> : <span style={{ fontSize: 15, color: "#374151" }}>—</span>}
                       <span style={{ fontSize: 16, fontWeight: 600, color: lv ? lv.color : "#374151", textAlign: "right" }}>{row.result ? `${Math.round(row.result.confidence * 100)}%` : "—"}</span>
                     </div>
                   );
@@ -499,14 +497,14 @@ export default function App() {
       {tab === "dashboard" && (
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px 60px" }}>
           <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: "#f3f4f6", margin: "0 0 6px", letterSpacing: "-0.02em" }}>Dashboard</h1>
-            <p style={{ fontSize: 16, color: "#6b7280", margin: 0 }}>{total === 0 ? "No comments analyzed yet." : `${total} comment${total !== 1 ? "s" : ""} this session.`}</p>
+            <h1 style={{ fontSize: 28, fontWeight: 700, color: "#f3f4f6", margin: "0 0 8px", letterSpacing: "-0.02em" }}>Dashboard</h1>
+            <p style={{ fontSize: 15, color: "#6b7280", margin: 0 }}>{total === 0 ? "No comments analyzed yet." : `${total} comment${total !== 1 ? "s" : ""} this session.`}</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 16 }}>
             {[{ label: "Total", value: total, color: "#e4e7ed" }, { label: "Toxic", value: toxicCount, color: "#f87171" }, { label: "Safe", value: total - toxicCount, color: "#4ade80" }, { label: "Avg Score", value: `${avgScore}%`, color: "#eab308" }].map(({ label, value, color }) => (
               <div key={label} style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 10, padding: "16px 18px" }}>
-                <p style={{ fontSize: 10, color: "#4b5563", margin: "0 0 8px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
+                <p style={{ fontSize: 11, color: "#4b5563", margin: "0 0 8px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
                 <p style={{ fontSize: 26, fontWeight: 700, color, margin: 0, letterSpacing: "-0.02em" }}>{value}</p>
               </div>
             ))}
@@ -530,11 +528,11 @@ export default function App() {
           <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, padding: "18px 20px", marginBottom: 12 }}>
             <p style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, margin: "0 0 14px", textTransform: "uppercase", letterSpacing: "0.07em" }}>Most flagged terms</p>
             {topWords.length === 0
-              ? <p style={{ fontSize: 16, color: "#374151", margin: 0 }}>No toxic terms logged yet.</p>
+              ? <p style={{ fontSize: 15, color: "#374151", margin: 0 }}>No toxic terms logged yet.</p>
               : <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                   {topWords.map(([word, count]) => (
                     <div key={word} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <code style={{ fontSize: 16, color: "#9ca3af", width: 100, textAlign: "right", flexShrink: 0 }}>{word}</code>
+                      <code style={{ fontSize: 15, color: "#9ca3af", width: 100, textAlign: "right", flexShrink: 0 }}>{word}</code>
                       <div style={{ flex: 1, height: 4, background: "#1e2128", borderRadius: 999, overflow: "hidden" }}>
                         <div style={{ height: "100%", width: `${(count / topWords[0][1]) * 100}%`, background: "#ef4444", borderRadius: 999, transition: "width 0.6s" }} />
                       </div>
@@ -549,7 +547,7 @@ export default function App() {
             <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 12, padding: "18px 20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <p style={{ fontSize: 11, color: "#4b5563", fontWeight: 600, margin: 0, textTransform: "uppercase", letterSpacing: "0.07em" }}>Comment log</p>
-                <button onClick={() => { setHistory([]); setResult(null); }} style={{ fontSize: 16, color: "#374151", background: "none", border: "none", cursor: "pointer" }}
+                <button onClick={() => { setHistory([]); setResult(null); }} style={{ fontSize: 15, color: "#374151", background: "none", border: "none", cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
                   onMouseLeave={e => e.currentTarget.style.color = "#374151"}
                 >Clear all</button>
@@ -575,18 +573,18 @@ export default function App() {
 
       {/* Footer */}
       <footer style={{ borderTop: "1px solid #1e2128", padding: "20px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-        <div style={{ fontSize: 13, color: "#374151" }}>
+        <div style={{ fontSize: 14, color: "#374151" }}>
           Built by <span style={{ color: "#e4e7ed", fontWeight: 600 }}>Tanisha Sharma</span> · Wordikt © 2025
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <a href="https://github.com/tanishas05" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6b7280", textDecoration: "none", transition: "color 0.15s" }}
+          <a href="https://github.com/tanishas05" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "#6b7280", textDecoration: "none", transition: "color 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.color = "#e4e7ed"}
             onMouseLeave={e => e.currentTarget.style.color = "#6b7280"}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
             GitHub
           </a>
-          <a href="https://www.linkedin.com/in/tanishas05/" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6b7280", textDecoration: "none", transition: "color 0.15s" }}
+          <a href="https://www.linkedin.com/in/tanishas05/" target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, color: "#6b7280", textDecoration: "none", transition: "color 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.color = "#0a66c2"}
             onMouseLeave={e => e.currentTarget.style.color = "#6b7280"}
           >
@@ -606,6 +604,7 @@ export default function App() {
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #1e2128; border-radius: 2px; }
       `}</style>
-    </div>
+
+    </div> 
   );
 }
