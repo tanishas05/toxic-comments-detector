@@ -88,9 +88,13 @@ export default function App() {
   const [error, setError] = useState(null);
   const [bulkResults, setBulkResults] = useState([]);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkPaused, setBulkPaused] = useState(false);
   const [bulkProgress, setBulkProgress] = useState(0);
+  const [bulkTotal, setBulkTotal] = useState(0);
   const abortRef = useRef(null);
   const textareaRef = useRef(null);
+  const bulkCancelledRef = useRef(false);
+  const bulkPausedRef = useRef(false);
 
   const analyze = async (input, silent = false) => {
     if (!input.trim()) { setResult(null); return; }
@@ -98,7 +102,7 @@ export default function App() {
     const ctrl = new AbortController(); abortRef.current = ctrl;
     if (!silent) { setLoading(true); setError(null); }
     try {
-      const res = await axios.post("https://tanishas05-wordikt-backend.hf.space/predict", { text: input }, { signal: ctrl.signal });
+      const res = await axios.post("https://toxic-comments-detector.onrender.com/predict", { text: input }, { signal: ctrl.signal });
       setResult(res.data);
       setHistory(prev => [{ text: input.slice(0, 120), result: res.data }, ...prev.filter(h => h.text !== input.slice(0, 120))].slice(0, 50));
     } catch (err) {
@@ -132,9 +136,17 @@ export default function App() {
   const handleBulkFile = async (file) => {
     const lines = await extractLinesFromFile(file);
     if (!lines.length) return;
-    setBulkResults([]); setBulkLoading(true); setBulkProgress(0);
+    bulkCancelledRef.current = false;
+    bulkPausedRef.current = false;
+    setBulkResults([]); setBulkLoading(true); setBulkPaused(false); setBulkProgress(0); setBulkTotal(lines.length);
     const results = [];
     for (let i = 0; i < lines.length; i++) {
+      if (bulkCancelledRef.current) break;
+      // wait while paused
+      while (bulkPausedRef.current && !bulkCancelledRef.current) {
+        await new Promise(r => setTimeout(r, 200));
+      }
+      if (bulkCancelledRef.current) break;
       const comment = lines[i];
       try {
         const res = await axios.post("https://tanishas05-wordikt-backend.hf.space/predict", { text: comment });
@@ -145,6 +157,24 @@ export default function App() {
       setBulkProgress(Math.round(((i + 1) / lines.length) * 100));
     }
     setBulkLoading(false);
+    setBulkPaused(false);
+  };
+
+  const handleBulkPause = () => {
+    bulkPausedRef.current = true;
+    setBulkPaused(true);
+  };
+
+  const handleBulkResume = () => {
+    bulkPausedRef.current = false;
+    setBulkPaused(false);
+  };
+
+  const handleBulkCancel = () => {
+    bulkCancelledRef.current = true;
+    bulkPausedRef.current = false;
+    setBulkLoading(false);
+    setBulkPaused(false);
   };
 
   const exportCSV = (results) => {
@@ -426,12 +456,37 @@ export default function App() {
 
           {bulkLoading && (
             <div style={{ background: "#16181e", border: "1px solid #1e2128", borderRadius: 10, padding: "16px 20px", marginBottom: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontSize: 15, color: "#9ca3af" }}>Analyzing comments…</span>
-                <span style={{ fontSize: 16, fontWeight: 600, color: "#4f46e5" }}>{bulkProgress}%</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {bulkPaused
+                    ? <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#eab308" }} />
+                    : <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#4f46e5", animation: "pulse 1.2s ease infinite" }} />
+                  }
+                  <span style={{ fontSize: 14, color: "#9ca3af" }}>
+                    {bulkPaused ? "Paused" : "Analyzing…"} {bulkResults.length} / {bulkTotal}
+                  </span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "#4f46e5", marginRight: 8 }}>{bulkProgress}%</span>
+                  {bulkPaused ? (
+                    <button onClick={handleBulkResume} style={{ padding: "5px 14px", borderRadius: 7, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", background: "#4f46e5", color: "#fff", transition: "all 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#4338ca"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#4f46e5"}
+                    >Resume</button>
+                  ) : (
+                    <button onClick={handleBulkPause} style={{ padding: "5px 14px", borderRadius: 7, fontSize: 13, fontWeight: 600, border: "1px solid #2d3139", cursor: "pointer", background: "transparent", color: "#9ca3af", transition: "all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = "#eab308"; e.currentTarget.style.color = "#eab308"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "#2d3139"; e.currentTarget.style.color = "#9ca3af"; }}
+                    >Pause</button>
+                  )}
+                  <button onClick={handleBulkCancel} style={{ padding: "5px 14px", borderRadius: 7, fontSize: 13, fontWeight: 600, border: "1px solid #2d3139", cursor: "pointer", background: "transparent", color: "#9ca3af", transition: "all 0.15s" }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "#ef4444"; e.currentTarget.style.color = "#f87171"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = "#2d3139"; e.currentTarget.style.color = "#9ca3af"; }}
+                  >Cancel</button>
+                </div>
               </div>
               <div style={{ height: 4, background: "#1e2128", borderRadius: 999 }}>
-                <div style={{ height: "100%", width: `${bulkProgress}%`, background: "#4f46e5", borderRadius: 999, transition: "width 0.3s" }} />
+                <div style={{ height: "100%", width: `${bulkProgress}%`, background: bulkPaused ? "#eab308" : "#4f46e5", borderRadius: 999, transition: "width 0.3s" }} />
               </div>
             </div>
           )}
@@ -596,6 +651,7 @@ export default function App() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
         * { box-sizing: border-box; }
         body { margin: 0; background: #111318; }
@@ -604,7 +660,6 @@ export default function App() {
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #1e2128; border-radius: 2px; }
       `}</style>
-
-    </div> 
+    </div>
   );
 }
