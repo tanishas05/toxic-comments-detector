@@ -37,7 +37,7 @@ Deployment - Vercel (frontend), HuggingFace Spaces (backend)
 To update the backend:
 
 bash
-cd wordikt-backend   # your HF Space clone
+cd wordikt-backend   
 export PATH=$HOME/bin:$PATH
 cp ../toxic-comments-detector/backend/app.py .
 git add . && git commit -m "update" && git push
